@@ -74,7 +74,13 @@ export function InstanceCard({
               />
             </CardTitle>
             <CardDescription className="text-xs" style={{ color: '#a0a0a0' }}>
-              Port: {instance.port} • Created: {new Date(instance.createdAt).toLocaleDateString()}
+              {instance.port ? `Port: ${instance.port}` : 'Port: Not exposed'}
+            </CardDescription>
+            <CardDescription className="text-xs" style={{ color: '#a0a0a0' }}>
+              Created: {new Date(instance.createdAt).toLocaleString()}
+            </CardDescription>
+            <CardDescription className="text-xs" style={{ color: '#a0a0a0' }}>
+              Last Active: {new Date(instance.lastActive).toLocaleString()}
             </CardDescription>
           </div>
           <div className="flex gap-1">
@@ -207,16 +213,18 @@ export function InstanceCard({
                 </Button>
               </>
             )}
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 text-gray-300 border-gray-600 hover:bg-gray-800"
-              onClick={() => window.open(buildInstanceUrl(instance.port), '_blank')}
-              disabled={!isRunning}
-            >
-              <Activity className="h-4 w-4 mr-1" />
-              Connect
-            </Button>
+            {instance.port && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 text-gray-300 border-gray-600 hover:bg-gray-800"
+                onClick={() => window.open(buildInstanceUrl(instance.port), '_blank')}
+                disabled={!isRunning}
+              >
+                <Activity className="h-4 w-4 mr-1" />
+                Connect
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

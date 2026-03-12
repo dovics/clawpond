@@ -233,13 +233,13 @@ export function CreateInstanceDialog({
             <Input
               id="port"
               type="number"
-              placeholder="Auto-assign"
+              placeholder="Do not expose port"
               value={port || ''}
               onChange={(e) => setPort(e.target.value ? parseInt(e.target.value) : undefined)}
               className="text-white"
             />
             <p className="text-xs text-gray-500">
-              Leave empty to auto-assign. Default resources: 0.2 cores, 100MB RAM
+              Leave empty to not expose port externally. Default resources: 0.2 cores, 100MB RAM
             </p>
           </div>
         </div>

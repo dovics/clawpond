@@ -115,10 +115,10 @@ export class DockerService {
           name: labels['openclaw.name'] || name,
           containerId: container.Id,
           status: this.mapContainerStatus(container.State),
-          port: port || 42617,
+          port: port,
           config: await this.getConfigFromContainer(containerInfo),
-          createdAt: new Date(container.Created).toISOString(),
-          lastActive: new Date(container.Created).toISOString(),
+          createdAt: containerInfo.Created,
+          lastActive: containerInfo.State.StartedAt,
           memoryLimit: labels['openclaw.memoryLimit'] ? parseInt(labels['openclaw.memoryLimit']) : undefined,
           cpuLimit: labels['openclaw.cpuLimit'] ? parseFloat(labels['openclaw.cpuLimit']) : undefined,
           cpu: cpuUsage !== undefined ? { usage: cpuUsage } : undefined,
@@ -200,7 +200,9 @@ export class DockerService {
    */
   async createInstance(options: CreateInstanceOptions): Promise<ZeroClawInstance | null> {
     try {
-      const port = options.port || await this.findAvailablePort();
+      // 如果用户没有填写 Port，则不暴露端口
+      const shouldExposePort = options.port !== undefined && options.port !== null && options.port !== '';
+      const port = shouldExposePort ? options.port : 42617;
 
       // 获取当前用户 UID/GID
       const { uid, gid } = getUidGid();
@@ -270,19 +272,14 @@ export class DockerService {
       const memoryLimitBytes = (options.memoryLimit || 500) * 1024 * 1024;
       const cpuLimitNanos = (options.cpuLimit || 0.5) * 1000000000;
 
-      const containerConfig = {
+      // Build container config
+      const containerConfig: any = {
         name: `openclaw-${options.name.toLowerCase().replace(/\s+/g, '-')}`,
         Image: 'ghcr.io/zeroclaw-labs/zeroclaw:latest',
         Cmd: ['daemon'],
         User: `${uid}:${gid}`,
         Env: env,
-        ExposedPorts: {
-          '42617/tcp': {}
-        },
         HostConfig: {
-          PortBindings: {
-            '42617/tcp': [{ HostPort: port.toString() }]
-          },
           Binds: [`${configDir}:/zeroclaw-data`],
           RestartPolicy: {
             Name: 'unless-stopped'
@@ -293,11 +290,21 @@ export class DockerService {
         Labels: {
           'openclaw.managed': 'true',
           'openclaw.name': options.name,
-          'openclaw.port': port.toString(),
           'openclaw.memoryLimit': (options.memoryLimit || 500).toString(),
           'openclaw.cpuLimit': (options.cpuLimit || 0.5).toString(),
         },
       };
+
+      // 只有当用户明确提供 port 时才暴露端口
+      if (shouldExposePort) {
+        containerConfig.ExposedPorts = {
+          [`${port}/tcp`]: {}
+        };
+        containerConfig.HostConfig.PortBindings = {
+          [`${port}/tcp`]: [{ HostPort: port.toString() }]
+        };
+        containerConfig.Labels['openclaw.port'] = port.toString();
+      }
 
       // Pull image if not exists
       await this.pullImage('ghcr.io/zeroclaw-labs/zeroclaw:latest');
@@ -344,7 +351,7 @@ export class DockerService {
         name: options.name,
         containerId: container.id,
         status: 'running',
-        port: port,
+        port: shouldExposePort ? port : undefined,
         config: configOverride,
         createdAt: new Date().toISOString(),
       };
@@ -722,9 +729,9 @@ export class DockerService {
     return port;
   }
 
-  private extractPort(ports: any[]): number {
+  private extractPort(ports: any[]): number | undefined {
     const port = ports.find(p => p.PublicPort);
-    return port?.PublicPort || 42617;
+    return port?.PublicPort;
   }
 
   private extractPorts(ports: any): string[] {
