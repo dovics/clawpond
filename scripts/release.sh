@@ -14,6 +14,14 @@ NC='\033[0m'
 REGISTRY=${REGISTRY:-"docker.io/dovics1"}
 IMAGE_NAME="clawpond"
 
+# 获取版本号
+if [ -f "package.json" ]; then
+    VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+else
+    echo -e "${RED}错误: 未找到 package.json${NC}"
+    exit 1
+fi
+
 # Docker Hub 特殊处理
 if [[ "$REGISTRY" == "docker.io"* ]]; then
     # 提取用户名 (docker.io/username -> username)
@@ -25,14 +33,6 @@ else
     FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}:${VERSION}"
     LATEST_IMAGE="${REGISTRY}/${IMAGE_NAME}:latest"
     LOGIN_HOST="$REGISTRY"
-fi
-
-# 获取版本号
-if [ -f "package.json" ]; then
-    VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
-else
-    echo -e "${RED}错误: 未找到 package.json${NC}"
-    exit 1
 fi
 
 echo -e "${BLUE}=== ClawPond 发布脚本 ===${NC}"
