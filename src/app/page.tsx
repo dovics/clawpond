@@ -11,6 +11,7 @@ import { TemplateManagerDialog } from '@/components/TemplateManagerDialog';
 import { LogsViewer } from '@/components/LogsViewer';
 import { ZeroClawInstance, CreateInstanceOptions } from '@/types';
 import { List } from 'lucide-react';
+import { AuthGate } from '@/components/AuthGate';
 
 export default function Dashboard() {
   const [instances, setInstances] = useState<ZeroClawInstance[]>([]);
@@ -158,8 +159,9 @@ export default function Dashboard() {
   const stoppedCount = instances.filter(i => i.status === 'stopped' || i.status === 'exited').length;
 
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: '#0f1117' }}>
-      <div className="container mx-auto py-8 px-4">
+    <AuthGate>
+      <div className="min-h-screen relative" style={{ backgroundColor: '#0f1117' }}>
+        <div className="container mx-auto py-8 px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -308,5 +310,6 @@ export default function Dashboard() {
         instances={instances}
       />
     </div>
+    </AuthGate>
   );
 }

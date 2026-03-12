@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "sh -c 'HOST_UID=$(id -u) HOST_GID=$(id -g) next dev'",
+    "dev": "sh -c 'HOST_UID=$(id -u) HOST_GID=$(id -g) node server.js dev'",
     "build": "next build",
-    "start": "sh -c 'HOST_UID=$(id -u) HOST_GID=$(id -g) next start'",
+    "start": "sh -c 'HOST_UID=$(id -u) HOST_GID=$(id -g) node server.js start'",
     "lint": "eslint"
   },
   "dependencies": {

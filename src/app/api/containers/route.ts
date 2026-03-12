@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dockerService } from '@/lib/docker.service';
+import { requireAuth } from '@/lib/auth-middleware';
 
 export async function GET(request: NextRequest) {
+  const authError = await requireAuth(request);
+  if (authError) return authError;
+
   try {
     const containers = await dockerService.getContainers();
     return NextResponse.json(containers);
@@ -15,6 +19,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = await requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const instance = await dockerService.createInstance(body);
