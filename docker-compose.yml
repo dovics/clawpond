@@ -1,35 +1,44 @@
 services:
-  # ZeroClaw - AI 代理服务
-  zeroclaw:
-    image: ghcr.io/zeroclaw-labs/zeroclaw:latest
-    container_name: zeroclaw
-    command: ["zeroclaw", "daemon"]
+  # ClawPond - ZeroClaw 管理界面
+  clawpond:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: clawpond:latest
+    container_name: clawpond
     restart: unless-stopped
-
-    environment:
-      - API_KEY=${ZEROCLAW_API_KEY:-}
-      - PROVIDER=${ZEROCLAW_PROVIDER:-openrouter}
-      - ZEROCLAW_ALLOW_PUBLIC_BIND=true
-      - ZEROCLAW_GATEWAY_PORT=${ZEROCLAW_PORT:-42617}
-
-    volumes:
-      - ./zeroclaw:/zeroclaw-data
-
     ports:
-      - "${ZEROCLAW_PORT:-42617}:42617"
-
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-
+      - "${CLAWPOND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - HOST_UID=1001
+      - HOST_GID=1001
+      - WORKSPACE_ROOT=/app/workspace
+      # Auth settings
+      - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_PASSWORD=${AUTH_PASSWORD:-admin}
+    volumes:
+      # Mount Docker socket for container management
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Persist workspace data
+      - clawpond_workspace:/app/workspace
+      # Persist auth token data
+      - clawpond_data:/app/data
+    networks:
+      - clawpond_network
     healthcheck:
-      test: ["CMD", "zeroclaw", "status"]
-      interval: 60s
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+
+volumes:
+  clawpond_workspace:
+    driver: local
+  clawpond_data:
+    driver: local
+
+networks:
+  clawpond_network:
+    driver: bridge
