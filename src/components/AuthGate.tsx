@@ -75,7 +75,7 @@ export function AuthGate({ children }: AuthGateProps) {
 
   if (isAuthenticated === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0f1117' }}>
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-gray-400">Loading...</div>
       </div>
     );
@@ -83,12 +83,12 @@ export function AuthGate({ children }: AuthGateProps) {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#0f1117' }}>
-        <Card className="w-full max-w-md" style={{ backgroundColor: '#1a1d26', borderColor: '#2a2d36' }}>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <Card className="w-full max-w-md bg-card border-border">
           <CardHeader className="space-y-1">
             <div className="flex items-center justify-center mb-4">
-              <div className="h-12 w-12 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 59, 48, 0.1)' }}>
-                <Lock className="h-6 w-6" style={{ color: '#ff3b30' }} />
+              <div className="h-12 w-12 rounded-full flex items-center justify-center bg-primary/10">
+                <Lock className="h-6 w-6 text-primary" />
               </div>
             </div>
             <CardTitle className="text-2xl text-center text-white">
@@ -119,8 +119,7 @@ export function AuthGate({ children }: AuthGateProps) {
               <Button
                 type="submit"
                 disabled={isLoading || !token}
-                className="w-full"
-                style={{ backgroundColor: '#ff3b30', color: 'white' }}
+                className="w-full bg-primary text-primary-foreground"
               >
                 {isLoading ? 'Verifying...' : 'Access Dashboard'}
               </Button>

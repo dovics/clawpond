@@ -99,7 +99,7 @@ export function CreateInstanceDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
-            <span style={{ color: '#ff3b30' }}>›</span>
+            <span className="text-primary">›</span>
             Create New Instance
           </DialogTitle>
           <DialogDescription className="text-gray-400">
@@ -255,7 +255,7 @@ export function CreateInstanceDialog({
           <Button
             onClick={handleCreate}
             disabled={!name.trim() || (mode === 'template' && templates.length === 0)}
-            style={{ backgroundColor: '#ff3b30', color: 'white' }}
+            className="bg-primary text-primary-foreground"
           >
             Create
           </Button>

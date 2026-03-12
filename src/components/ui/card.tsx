@@ -12,11 +12,6 @@ const Card = React.forwardRef<
       "rounded-xl border bg-card text-card-foreground shadow-lg",
       className
     )}
-    style={{
-      backgroundColor: '#1a1f2e',
-      borderColor: 'rgba(255, 59, 48, 0.1)',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-    }}
     {...props}
   />
 ))

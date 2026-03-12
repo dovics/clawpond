@@ -308,7 +308,7 @@ export function ConfigEditor({
       >
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
-            <span style={{ color: '#ff3b30' }}>›</span>
+            <span className="text-primary">›</span>
             Configuration: {instanceName}
           </DialogTitle>
           <DialogDescription className="text-gray-400">
@@ -318,11 +318,11 @@ export function ConfigEditor({
 
         <Tabs defaultValue="general" className="w-full">
           <TabsList className="grid w-full grid-cols-5" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
-            <TabsTrigger value="general" className="data-[state=active]:text-white data-[state=active]:bg-transparent" style={{ color: '#a0a0a0' }}>General</TabsTrigger>
-            <TabsTrigger value="autonomy" className="data-[state=active]:text-white data-[state=active]:bg-transparent" style={{ color: '#a0a0a0' }}>Autonomy</TabsTrigger>
-            <TabsTrigger value="channels" className="data-[state=active]:text-white data-[state=active]:bg-transparent" style={{ color: '#a0a0a0' }}>Channels</TabsTrigger>
-            <TabsTrigger value="security" className="data-[state=active]:text-white data-[state=active]:bg-transparent" style={{ color: '#a0a0a0' }}>Security</TabsTrigger>
-            <TabsTrigger value="advanced" className="data-[state=active]:text-white data-[state=active]:bg-transparent" style={{ color: '#a0a0a0' }}>Advanced</TabsTrigger>
+            <TabsTrigger value="general" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">General</TabsTrigger>
+            <TabsTrigger value="autonomy" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Autonomy</TabsTrigger>
+            <TabsTrigger value="channels" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Channels</TabsTrigger>
+            <TabsTrigger value="security" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Security</TabsTrigger>
+            <TabsTrigger value="advanced" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Advanced</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4 mt-4">
@@ -366,7 +366,7 @@ export function ConfigEditor({
                   className="text-white"
                   style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
                 />
-                <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                <p className="text-xs text-muted-foreground">
                   Enter the base URL of your OpenAI-compatible API
                 </p>
               </div>
@@ -383,7 +383,7 @@ export function ConfigEditor({
                 className="text-white"
                 style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
               />
-              <p className="text-xs" style={{ color: '#a0a0a0' }}>
+              <p className="text-xs text-muted-foreground">
                 Leave empty to use environment variables
               </p>
             </div>
@@ -511,7 +511,7 @@ export function ConfigEditor({
               <div className="flex items-center justify-between p-3 rounded-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                 <div>
                   <h3 className="text-white font-medium">Telegram Channel</h3>
-                  <p className="text-xs" style={{ color: '#a0a0a0' }}>Enable Telegram bot integration</p>
+                  <p className="text-xs text-muted-foreground">Enable Telegram bot integration</p>
                 </div>
                 <Switch
                   id="telegramEnabled"
@@ -540,7 +540,7 @@ export function ConfigEditor({
                       className="text-white"
                       style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
                     />
-                    <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                    <p className="text-xs text-muted-foreground">
                       Get your bot token from @BotFather on Telegram
                     </p>
                   </div>
@@ -558,7 +558,7 @@ export function ConfigEditor({
                       className="text-white"
                       style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
                     />
-                    <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                    <p className="text-xs text-muted-foreground">
                       Comma-separated list of usernames or user IDs. Use * to allow all users.
                     </p>
                   </div>
@@ -575,7 +575,7 @@ export function ConfigEditor({
                       <option value="off">Off</option>
                       <option value="partial">Partial</option>
                     </select>
-                    <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                    <p className="text-xs text-muted-foreground">
                       Off: no streaming, Partial: edit messages in-place with updates
                     </p>
                   </div>
@@ -590,7 +590,7 @@ export function ConfigEditor({
                       className="text-white"
                       style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
                     />
-                    <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                    <p className="text-xs text-muted-foreground">
                       Edit throttle for partial streaming (default: 1000ms)
                     </p>
                   </div>
@@ -598,7 +598,7 @@ export function ConfigEditor({
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="telegramMentionOnly" className="text-white">Mention Only</Label>
-                      <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                      <p className="text-xs text-muted-foreground">
                         Only respond to mentions in groups
                       </p>
                     </div>
@@ -612,7 +612,7 @@ export function ConfigEditor({
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="telegramInterrupt" className="text-white">Interrupt on New Message</Label>
-                      <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                      <p className="text-xs text-muted-foreground">
                         Cancel in-flight requests on new message
                       </p>
                     </div>
@@ -626,7 +626,7 @@ export function ConfigEditor({
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="telegramAckEnabled" className="text-white">Acknowledgment Reactions</Label>
-                      <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                      <p className="text-xs text-muted-foreground">
                         Send emoji reaction acknowledgments
                       </p>
                     </div>
@@ -668,7 +668,7 @@ export function ConfigEditor({
                         className="text-white"
                         style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
                       />
-                      <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                      <p className="text-xs text-muted-foreground">
                         Comma-separated list of sender IDs that bypass mention gate (optional)
                       </p>
                     </div>
@@ -684,7 +684,7 @@ export function ConfigEditor({
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="cliEnabled" className="text-white">CLI Enabled</Label>
-                  <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                  <p className="text-xs text-muted-foreground">
                     Enable CLI channel interface
                   </p>
                 </div>
@@ -830,7 +830,7 @@ export function ConfigEditor({
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="proxyEnabled" className="text-white">Enable Proxy</Label>
-                  <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                  <p className="text-xs text-muted-foreground">
                     Enable proxy support for network requests
                   </p>
                 </div>
@@ -859,7 +859,7 @@ export function ConfigEditor({
                       <option value="services">Services (selected services only)</option>
                       <option value="environment">Environment (process-wide)</option>
                     </select>
-                    <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                    <p className="text-xs text-muted-foreground">
                       zeroclaw: internal clients only | services: specific services | environment: process-wide
                     </p>
                   </div>
@@ -874,7 +874,7 @@ export function ConfigEditor({
                       className="text-white"
                       style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
                     />
-                    <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                    <p className="text-xs text-muted-foreground">
                       HTTP proxy URL (supports http, https, socks5, socks5h)
                     </p>
                   </div>
@@ -889,7 +889,7 @@ export function ConfigEditor({
                       className="text-white"
                       style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
                     />
-                    <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                    <p className="text-xs text-muted-foreground">
                       HTTPS proxy URL (optional, defaults to http_proxy)
                     </p>
                   </div>
@@ -904,7 +904,7 @@ export function ConfigEditor({
                       className="text-white"
                       style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
                     />
-                    <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                    <p className="text-xs text-muted-foreground">
                       Universal proxy URL for all protocols (optional)
                     </p>
                   </div>
@@ -914,7 +914,7 @@ export function ConfigEditor({
                       <div className="flex items-center justify-between">
                         <div>
                           <Label className="text-white">Service Selectors</Label>
-                          <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                          <p className="text-xs text-muted-foreground">
                             Select which services use the proxy (scope: services only)
                           </p>
                         </div>
@@ -961,7 +961,7 @@ export function ConfigEditor({
                           </div>
                         ))}
                       </div>
-                      <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                      <p className="text-xs text-muted-foreground">
                         Service selectors: provider.*, tool.*, channel.* (e.g., provider.openai, provider.*)
                       </p>
                     </div>
@@ -1013,7 +1013,7 @@ export function ConfigEditor({
                         </div>
                       ))}
                     </div>
-                    <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                    <p className="text-xs text-muted-foreground">
                       Domains and IPs that bypass the proxy
                     </p>
                   </div>
@@ -1063,7 +1063,7 @@ export function ConfigEditor({
                   </div>
                 ))}
               </div>
-              <p className="text-xs" style={{ color: '#a0a0a0' }}>
+              <p className="text-xs text-muted-foreground">
                 Environment variables to pass to the Docker container. Click "+ Add Variable" to add more.
               </p>
             </div>
@@ -1071,7 +1071,7 @@ export function ConfigEditor({
             <div className="mt-6 space-y-4">
               <div className="p-3 rounded-md" style={{ backgroundColor: 'rgba(255, 59, 48, 0.1)', border: '1px solid rgba(255, 59, 48, 0.3)' }}>
                 <Label className="text-white font-semibold">Docker Resource Limits</Label>
-                <p className="text-xs mt-1" style={{ color: '#a0a0a0' }}>
+                <p className="text-xs mt-1 text-muted-foreground">
                   Configure CPU and memory limits for the container. Minimum values: CPU 0.1 cores, Memory 50MB. Requires container restart to apply.
                 </p>
 
@@ -1095,7 +1095,7 @@ export function ConfigEditor({
                       className="text-white"
                       style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
                     />
-                    <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                    <p className="text-xs text-muted-foreground">
                       Memory limit in megabytes (min: 50MB, recommended: 256-16384)
                     </p>
                   </div>
@@ -1119,7 +1119,7 @@ export function ConfigEditor({
                       className="text-white"
                       style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
                     />
-                    <p className="text-xs" style={{ color: '#a0a0a0' }}>
+                    <p className="text-xs text-muted-foreground">
                       CPU cores, supports decimals (min: 0.1, recommended: 0.25-16)
                     </p>
                   </div>
@@ -1169,7 +1169,7 @@ export function ConfigEditor({
           </Button>
           <Button
             onClick={handleSave}
-            style={{ backgroundColor: '#ff3b30', color: 'white' }}
+            className="bg-primary text-primary-foreground"
           >
             Save Changes
           </Button>
@@ -1214,8 +1214,7 @@ export function ConfigEditor({
                 <Button
                   onClick={handleSaveAsTemplate}
                   disabled={savingTemplate || !templateName.trim()}
-                  style={{ backgroundColor: '#ff3b30', color: 'white' }}
-                  className="flex-1"
+                  className="flex-1 bg-primary text-primary-foreground"
                 >
                   {savingTemplate ? 'Saving...' : 'Save Template'}
                 </Button>

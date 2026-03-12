@@ -100,7 +100,7 @@ export function LogsViewer({
 
     return parts.map((part, i) =>
       regex.test(part) ? (
-        <mark key={i} style={{ backgroundColor: 'rgba(255, 59, 48, 0.3)', color: '#ff6b6b' }}>
+        <mark key={i} className="bg-primary/30 text-red-400">
           {part}
         </mark>
       ) : (
@@ -116,15 +116,11 @@ export function LogsViewer({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
-        style={{
-          backgroundColor: '#1a1f2e',
-          borderColor: 'rgba(255, 59, 48, 0.2)',
-        }}
+        className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col bg-card border-primary/20"
       >
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
-            <span style={{ color: '#ff3b30' }}>›</span>
+            <span className="text-primary">›</span>
             Container Logs: {containerName}
           </DialogTitle>
           <DialogDescription className="text-gray-400">
@@ -133,7 +129,7 @@ export function LogsViewer({
         </DialogHeader>
 
         {/* Controls */}
-        <div className="flex flex-wrap items-center gap-3 py-3 border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+        <div className="flex flex-wrap items-center gap-3 py-3 border-b border-border">
           <div className="flex items-center gap-2">
             <Label htmlFor="tailLines" className="text-white text-sm">Lines:</Label>
             <Input
@@ -143,8 +139,7 @@ export function LogsViewer({
               max="10000"
               value={tailLines}
               onChange={(e) => setTailLines(parseInt(e.target.value) || 100)}
-              className="w-20 text-white"
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+              className="w-20 text-white bg-muted border-input"
             />
           </div>
 
@@ -154,8 +149,7 @@ export function LogsViewer({
               placeholder="Search logs..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="text-white"
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+              className="text-white bg-muted border-input"
             />
             {searchTerm && (
               <Button
@@ -204,13 +198,8 @@ export function LogsViewer({
         {/* Logs Display */}
         <div className="flex-1 overflow-auto mt-3">
           <pre
-            className="p-4 rounded-md text-xs font-mono whitespace-pre-wrap break-words h-full"
-            style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.4)',
-              color: '#a0a0a0',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              minHeight: '400px',
-            }}
+            className="p-4 rounded-md text-xs font-mono whitespace-pre-wrap break-words h-full bg-black/40 text-muted-foreground border-border"
+            style={{ minHeight: '400px' }}
           >
             {isLoading ? 'Loading logs...' : filteredLogs || 'No logs available'}
             <div ref={logsEndRef} />
@@ -218,7 +207,7 @@ export function LogsViewer({
         </div>
 
         {/* Status Bar */}
-        <div className="flex justify-between items-center py-2 text-xs text-gray-400 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+        <div className="flex justify-between items-center py-2 text-xs text-gray-400 border-t border-border">
           <span>
             Showing {filteredLogs.split('\n').length} lines
             {searchTerm && ` (filtered from ${logs.split('\n').length} total lines)`}

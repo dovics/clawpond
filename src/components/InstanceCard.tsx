@@ -52,11 +52,7 @@ export function InstanceCard({
 
   return (
     <Card
-      className="overflow-hidden transition-all duration-300 hover:shadow-xl"
-      style={{
-        backgroundColor: '#1a1f2e',
-        borderColor: 'rgba(255, 59, 48, 0.2)',
-      }}
+      className="overflow-hidden transition-all duration-300 hover:shadow-xl bg-card border-primary/20"
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -66,20 +62,17 @@ export function InstanceCard({
               <span
                 className={cn(
                   'w-2 h-2 rounded-full',
-                  statusColors[instance.status]
+                  isRunning ? 'bg-green-500' : 'bg-primary'
                 )}
-                style={{
-                  backgroundColor: isRunning ? '#22c55e' : '#ff3b30',
-                }}
               />
             </CardTitle>
-            <CardDescription className="text-xs" style={{ color: '#a0a0a0' }}>
+            <CardDescription className="text-xs text-muted-foreground">
               {instance.port ? `Port: ${instance.port}` : 'Port: Not exposed'}
             </CardDescription>
-            <CardDescription className="text-xs" style={{ color: '#a0a0a0' }}>
+            <CardDescription className="text-xs text-muted-foreground">
               Created: {new Date(instance.createdAt).toLocaleString()}
             </CardDescription>
-            <CardDescription className="text-xs" style={{ color: '#a0a0a0' }}>
+            <CardDescription className="text-xs text-muted-foreground">
               Last Active: {instance.lastActive ? new Date(instance.lastActive).toLocaleString() : 'Never'}
             </CardDescription>
           </div>
@@ -105,8 +98,7 @@ export function InstanceCard({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
-              style={{ color: '#ff3b30' }}
+              className="h-8 w-8 text-primary"
               onClick={() => handleAction(() => onDelete(instance.containerId!))}
               disabled={isLoading}
               title="Delete"
@@ -121,22 +113,22 @@ export function InstanceCard({
           {/* Model Info */}
           <div className="text-sm">
             <div className="font-medium text-white">Model</div>
-            <div className="text-xs" style={{ color: '#a0a0a0' }}>
+            <div className="text-xs text-muted-foreground">
               {instance.config.default_model || 'Not configured'}
             </div>
           </div>
 
           {/* Resource Limits */}
           {(instance.cpuLimit || instance.memoryLimit) && (
-            <div className="text-xs p-2 rounded" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
+            <div className="text-xs p-2 rounded bg-muted">
               <div className="flex justify-between">
                 {instance.cpuLimit && (
-                  <span style={{ color: '#a0a0a0' }}>
+                  <span className="text-muted-foreground">
                     CPU: {instance.cpuLimit} cores
                   </span>
                 )}
                 {instance.memoryLimit && (
-                  <span style={{ color: '#a0a0a0' }}>
+                  <span className="text-muted-foreground">
                     Memory: {instance.memoryLimit}MB
                   </span>
                 )}
@@ -148,25 +140,23 @@ export function InstanceCard({
           {isRunning && (
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div
-                className="flex items-center gap-2 p-2 rounded"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+                className="flex items-center gap-2 p-2 rounded bg-muted"
               >
-                <Cpu className="h-3 w-3" style={{ color: '#ff3b30' }} />
+                <Cpu className="h-3 w-3 text-primary" />
                 <div>
                   <div className="font-medium text-white">CPU</div>
-                  <div style={{ color: '#a0a0a0' }}>
+                  <div className="text-muted-foreground">
                     {instance.cpu?.usage ? `${instance.cpu.usage.toFixed(1)}%` : 'N/A'}
                   </div>
                 </div>
               </div>
               <div
-                className="flex items-center gap-2 p-2 rounded"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+                className="flex items-center gap-2 p-2 rounded bg-muted"
               >
-                <HardDrive className="h-3 w-3" style={{ color: '#ff3b30' }} />
+                <HardDrive className="h-3 w-3 text-primary" />
                 <div>
                   <div className="font-medium text-white">Memory</div>
-                  <div style={{ color: '#a0a0a0' }}>
+                  <div className="text-muted-foreground">
                     {instance.memory?.usage && instance.memory?.limit
                       ? `${(instance.memory.usage / 1024 / 1024).toFixed(0)}MB`
                       : 'N/A'}
@@ -181,10 +171,9 @@ export function InstanceCard({
             {isStopped ? (
               <Button
                 size="sm"
-                className="flex-1"
+                className="flex-1 bg-primary text-primary-foreground"
                 onClick={() => handleAction(() => onStart(instance.containerId!))}
                 disabled={isLoading}
-                style={{ backgroundColor: '#ff3b30', color: 'white' }}
               >
                 <Play className="h-4 w-4 mr-1" />
                 Start

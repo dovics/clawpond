@@ -160,13 +160,13 @@ export default function Dashboard() {
 
   return (
     <AuthGate>
-      <div className="min-h-screen relative" style={{ backgroundColor: '#0f1117' }}>
+      <div className="min-h-screen relative bg-background">
         <div className="container mx-auto py-8 px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-              <span className="text-red-500 text-2xl">›</span>
+              <span className="text-primary text-2xl">›</span>
               ClawPond
             </h1>
             <p className="text-gray-400 mt-1">
@@ -193,7 +193,7 @@ export default function Dashboard() {
             </Button>
             <Button
               onClick={() => setIsCreateDialogOpen(true)}
-              style={{ backgroundColor: '#ff3b30', color: 'white' }}
+              className="bg-primary text-primary-foreground"
             >
               <Plus className="h-4 w-4 mr-2" />
               New Instance
@@ -206,7 +206,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-white">Total Instances</CardTitle>
-              <Activity className="h-4 w-4" style={{ color: '#ff3b30' }} />
+              <Activity className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-white">{instances.length}</div>
@@ -224,10 +224,10 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-white">Stopped</CardTitle>
-              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: '#ff3b30' }} />
+              <div className="h-2 w-2 rounded-full bg-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" style={{ color: '#ff3b30' }}>{stoppedCount}</div>
+              <div className="text-2xl font-bold text-primary">{stoppedCount}</div>
             </CardContent>
           </Card>
         </div>
@@ -237,7 +237,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <span style={{ color: '#ff3b30' }}>›</span>
+                <span className="text-primary">›</span>
                 No Instances Found
               </CardTitle>
               <CardDescription className="text-gray-400">
@@ -247,7 +247,7 @@ export default function Dashboard() {
             <CardContent>
               <Button
                 onClick={() => setIsCreateDialogOpen(true)}
-                style={{ backgroundColor: '#ff3b30', color: 'white' }}
+                className="bg-primary text-primary-foreground"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Instance
