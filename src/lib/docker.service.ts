@@ -201,7 +201,7 @@ export class DockerService {
   async createInstance(options: CreateInstanceOptions): Promise<ZeroClawInstance | null> {
     try {
       // 如果用户没有填写 Port，则不暴露端口
-      const shouldExposePort = options.port !== undefined && options.port !== null && options.port !== '';
+      const shouldExposePort = options.port !== undefined && options.port !== null;
       const port = shouldExposePort ? options.port : 42617;
 
       // 获取当前用户 UID/GID
@@ -296,14 +296,14 @@ export class DockerService {
       };
 
       // 只有当用户明确提供 port 时才暴露端口
-      if (shouldExposePort) {
+      if (shouldExposePort && options.port) {
         containerConfig.ExposedPorts = {
-          [`${port}/tcp`]: {}
+          [`${options.port}/tcp`]: {}
         };
         containerConfig.HostConfig.PortBindings = {
-          [`${port}/tcp`]: [{ HostPort: port.toString() }]
+          [`${options.port}/tcp`]: [{ HostPort: options.port.toString() }]
         };
-        containerConfig.Labels['openclaw.port'] = port.toString();
+        containerConfig.Labels['openclaw.port'] = options.port.toString();
       }
 
       // Pull image if not exists

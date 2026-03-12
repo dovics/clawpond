@@ -12,8 +12,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Template, ZeroClawConfig } from '@/lib/template.service';
-import { ZeroClawInstance } from '@/types';
+import { Template } from '@/lib/template.service';
+import { ZeroClawConfig, ZeroClawInstance } from '@/types';
 
 interface TemplateManagerDialogProps {
   isOpen: boolean;

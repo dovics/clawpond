@@ -134,7 +134,7 @@ export function ConfigEditor({
             return false;
           });
 
-          const parsedEnvVars: EnvVar[] = customEnv.map(envStr => {
+          const parsedEnvVars: EnvVar[] = customEnv.map((envStr: string) => {
             const eqIndex = envStr.indexOf('=');
             if (eqIndex > 0) {
               return {

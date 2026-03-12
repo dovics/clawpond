@@ -28,11 +28,9 @@ if [[ "$REGISTRY" == "docker.io"* ]]; then
     DOCKERHUB_USER="${REGISTRY#docker.io/}"
     FULL_IMAGE="${DOCKERHUB_USER}/${IMAGE_NAME}:${VERSION}"
     LATEST_IMAGE="${DOCKERHUB_USER}/${IMAGE_NAME}:latest"
-    LOGIN_HOST=""
 else
     FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}:${VERSION}"
     LATEST_IMAGE="${REGISTRY}/${IMAGE_NAME}:latest"
-    LOGIN_HOST="$REGISTRY"
 fi
 
 echo -e "${BLUE}=== ClawPond 发布脚本 ===${NC}"
@@ -40,14 +38,6 @@ echo ""
 echo "版本: ${VERSION}"
 echo "仓库: ${REGISTRY}"
 echo ""
-
-# 确认发布
-read -p "$(echo -e ${YELLOW}是否确认发布 v${VERSION}? [y/N]${NC} )" -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "已取消"
-    exit 0
-fi
 
 # 构建镜像
 echo -e "${YELLOW}构建镜像 ${FULL_IMAGE}...${NC}"
@@ -58,21 +48,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 登录仓库
-echo ""
-echo -e "${YELLOW}登录 Docker 仓库...${NC}"
-if [ -n "$LOGIN_HOST" ]; then
-    echo "请输入 ${REGISTRY} 的凭据"
-    docker login "${LOGIN_HOST}"
-else
-    echo "请输入 Docker Hub 凭据"
-    docker login
-fi
-
-if [ $? -ne 0 ]; then
-    echo -e "${RED}登录失败${NC}"
-    exit 1
-fi
 
 # 推送镜像
 echo ""

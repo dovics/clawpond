@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: clawpond:latest
+    image: dovics1/clawpond:latest
     container_name: clawpond
     restart: unless-stopped
     ports:

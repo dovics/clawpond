@@ -3,7 +3,7 @@ export interface ZeroClawInstance {
   name: string;
   containerId?: string;
   status: 'running' | 'stopped' | 'paused' | 'restarting' | 'exited' | 'created' | 'unknown';
-  port: number;
+  port?: number;
   config: ZeroClawConfig;
   createdAt: string;
   lastActive?: string;

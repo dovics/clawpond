@@ -4,9 +4,8 @@ const nextConfig: NextConfig = {
   // Enable standalone output for Docker production builds
   output: 'standalone',
 
-  // Optimize for production
+  // Optimize for production (SWC minification is enabled by default)
   reactStrictMode: true,
-  swcMinify: true,
 };
 
 export default nextConfig;
