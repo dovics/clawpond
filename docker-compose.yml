@@ -1,0 +1,35 @@
+services:
+  # ZeroClaw - AI 代理服务
+  zeroclaw:
+    image: ghcr.io/zeroclaw-labs/zeroclaw:latest
+    container_name: zeroclaw
+    command: ["zeroclaw", "daemon"]
+    restart: unless-stopped
+
+    environment:
+      - API_KEY=${ZEROCLAW_API_KEY:-}
+      - PROVIDER=${ZEROCLAW_PROVIDER:-openrouter}
+      - ZEROCLAW_ALLOW_PUBLIC_BIND=true
+      - ZEROCLAW_GATEWAY_PORT=${ZEROCLAW_PORT:-42617}
+
+    volumes:
+      - ./zeroclaw:/zeroclaw-data
+
+    ports:
+      - "${ZEROCLAW_PORT:-42617}:42617"
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    healthcheck:
+      test: ["CMD", "zeroclaw", "status"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

@@ -1,0 +1,25 @@
+import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "ClawPond",
+  description: "AI Agent Instance Management Dashboard",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name="color-scheme" content="dark" />
+        <meta name="darkreader-lock" />
+      </head>
+      <body className="antialiased">
+        {children}
+      </body>
+    </html>
+  );
+}
