@@ -12,6 +12,7 @@ import { LogsViewer } from '@/components/LogsViewer';
 import { ZeroClawInstance, CreateInstanceOptions } from '@/types';
 import { List } from 'lucide-react';
 import { AuthGate } from '@/components/AuthGate';
+import { api } from '@/lib/api-client';
 
 export default function Dashboard() {
   const [instances, setInstances] = useState<ZeroClawInstance[]>([]);
@@ -26,7 +27,7 @@ export default function Dashboard() {
   const fetchInstances = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/containers');
+      const response = await api.get('/api/containers');
       if (response.ok) {
         const data = await response.json();
         setInstances(data);
@@ -41,12 +42,7 @@ export default function Dashboard() {
   // Instance actions
   const handleInstanceAction = async (containerId: string, action: string) => {
     try {
-      const response = await fetch(`/api/containers/${containerId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
-      });
-
+      const response = await api.patch(`/api/containers/${containerId}`, { action });
       if (response.ok) {
         fetchInstances();
       }
@@ -61,10 +57,7 @@ export default function Dashboard() {
     }
 
     try {
-      const response = await fetch(`/api/containers/${containerId}`, {
-        method: 'DELETE',
-      });
-
+      const response = await api.delete(`/api/containers/${containerId}`);
       if (response.ok) {
         fetchInstances();
       }
@@ -78,11 +71,7 @@ export default function Dashboard() {
 
     try {
       // First, update the config file
-      const response = await fetch(`/api/containers/${selectedInstance.containerId}/config`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
-      });
+      const response = await api.put(`/api/containers/${selectedInstance.containerId}/config`, config);
 
       if (!response.ok) {
         throw new Error('Failed to update config');
@@ -101,11 +90,7 @@ export default function Dashboard() {
       if (memoryChanged || cpuChanged) {
         console.log(`Resource limits changed - Memory: ${selectedInstance.memoryLimit} -> ${resourceLimits?.memoryLimit}, CPU: ${selectedInstance.cpuLimit} -> ${resourceLimits?.cpuLimit}`);
         // Use the new container ID for resource limits update
-        const limitsResponse = await fetch(`/api/containers/${newContainerId}/limits`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(resourceLimits),
-        });
+        const limitsResponse = await api.put(`/api/containers/${newContainerId}/limits`, resourceLimits);
 
         if (!limitsResponse.ok) {
           console.warn('Failed to update resource limits, but config was updated');
@@ -124,11 +109,7 @@ export default function Dashboard() {
 
   const handleCreateInstance = async (options: CreateInstanceOptions) => {
     try {
-      const response = await fetch('/api/containers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(options),
-      });
+      const response = await api.post('/api/containers', options);
 
       if (response.ok) {
         fetchInstances();

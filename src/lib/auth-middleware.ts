@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from './auth';
 
 export async function requireAuth(request: NextRequest): Promise<NextResponse | null> {
-  // Get token from cookie
-  const token = request.cookies.get('auth_token')?.value;
+  // Get token from Authorization header (Bearer token)
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader?.replace('Bearer ', '');
 
   if (!token || !verifyToken(token)) {
     return NextResponse.json(
@@ -17,5 +18,6 @@ export async function requireAuth(request: NextRequest): Promise<NextResponse | 
 
 // Helper to check auth in API routes
 export function getTokenFromRequest(request: NextRequest): string | undefined {
-  return request.cookies.get('auth_token')?.value;
+  const authHeader = request.headers.get('authorization');
+  return authHeader?.replace('Bearer ', '');
 }

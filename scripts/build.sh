@@ -12,7 +12,7 @@ NC='\033[0m' # No Color
 # 默认配置
 IMAGE_NAME="clawpond"
 IMAGE_TAG="latest"
-REGISTRY=""
+REGISTRY="dovics1"
 PUSH=false
 
 # 帮助信息
@@ -127,7 +127,7 @@ if [ $? -eq 0 ]; then
     echo "  docker run -d --name clawpond -p 3000:3000 ${FULL_IMAGE_NAME}"
     echo ""
     echo "或使用 docker-compose:"
-    echo "  docker-compose up -d"
+    echo "  docker compose up -d"
 else
     echo ""
     echo -e "${RED}✗ 镜像构建失败${NC}"

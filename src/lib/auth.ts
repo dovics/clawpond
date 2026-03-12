@@ -1,7 +1,19 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 const TOKEN_COOKIE_NAME = 'auth_token';
 const TOKEN_EXPIRY_DAYS = 30;
+
+// Check if the request is using HTTPS
+async function isSecureConnection(): Promise<boolean> {
+  try {
+    const headersList = await headers();
+    const xForwardedProto = headersList.get('x-forwarded-proto');
+    const protocol = xForwardedProto || headersList.get('x-forwarded-protocol') || '';
+    return protocol.toLowerCase() === 'https';
+  } catch {
+    return false;
+  }
+}
 
 // Get the expected token from environment
 export function getExpectedToken(): string {
@@ -27,7 +39,7 @@ export async function setAuthToken(token: string): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(TOKEN_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: await isSecureConnection(),
     sameSite: 'lax',
     maxAge: TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
     path: '/',

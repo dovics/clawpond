@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RefreshCw, Download, Search, X } from 'lucide-react';
+import { api } from '@/lib/api-client';
 
 interface LogsViewerProps {
   isOpen: boolean;
@@ -37,7 +38,7 @@ export function LogsViewer({
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/containers/${containerId}/logs?tail=${tailLines}`);
+      const response = await api.get(`/api/containers/${containerId}/logs?tail=${tailLines}`);
       if (response.ok) {
         const data = await response.json();
         setLogs(data.logs || '');

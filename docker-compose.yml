@@ -7,6 +7,7 @@ services:
     image: dovics1/clawpond:latest
     container_name: clawpond
     restart: unless-stopped
+    user: root
     ports:
       - "${CLAWPOND_PORT:-3000}:3000"
     environment:
@@ -14,16 +15,15 @@ services:
       - HOST_UID=1001
       - HOST_GID=1001
       - WORKSPACE_ROOT=/app/workspace
-      # Auth settings
-      - AUTH_SECRET=${AUTH_SECRET}
-      - AUTH_PASSWORD=${AUTH_PASSWORD:-admin}
+      # Auth settings (AUTH_TOKEN is used for authentication)
+      - AUTH_TOKEN=${AUTH_TOKEN:-a0421e2f9e6811518d3ad7ad7b51d6732c1dabc2df8fa011027a9920062b85d0}
     volumes:
       # Mount Docker socket for container management
       - /var/run/docker.sock:/var/run/docker.sock
       # Persist workspace data
-      - clawpond_workspace:/app/workspace
+      - ./workspace:/app/workspace
       # Persist auth token data
-      - clawpond_data:/app/data
+      - ./data:/app/data
     networks:
       - clawpond_network
     healthcheck:
@@ -32,12 +32,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
-volumes:
-  clawpond_workspace:
-    driver: local
-  clawpond_data:
-    driver: local
 
 networks:
   clawpond_network:

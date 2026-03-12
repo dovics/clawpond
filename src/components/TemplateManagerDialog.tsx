@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Template } from '@/lib/template.service';
 import { ZeroClawConfig, ZeroClawInstance } from '@/types';
+import { api } from '@/lib/api-client';
 
 interface TemplateManagerDialogProps {
   isOpen: boolean;
@@ -46,7 +47,7 @@ export function TemplateManagerDialog({
 
   const fetchTemplates = async () => {
     try {
-      const response = await fetch('/api/templates');
+      const response = await api.get('/api/templates');
       if (response.ok) {
         const data = await response.json();
         setTemplates(data);
@@ -82,9 +83,7 @@ export function TemplateManagerDialog({
     }
 
     try {
-      const response = await fetch(`/api/templates/${id}`, {
-        method: 'DELETE',
-      });
+      const response = await api.delete(`/api/templates/${id}`);
 
       if (response.ok) {
         await fetchTemplates();
@@ -123,11 +122,7 @@ export function TemplateManagerDialog({
         configToSave.gateway = gatewayWithoutPort;
       }
 
-      const response = await fetch('/api/templates', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await api.post('/api/templates', {
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,

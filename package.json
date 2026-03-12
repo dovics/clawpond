@@ -1,6 +1,6 @@
 {
   "name": "clawpond",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "dev": "sh -c 'HOST_UID=$(id -u) HOST_GID=$(id -g) node server.js dev'",

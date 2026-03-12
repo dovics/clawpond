@@ -15,25 +15,12 @@ A Next.js application for managing multiple ZeroClaw instances through Docker co
 
 ## Quick Start with Docker Compose
 
-1. **Generate auth secret**:
-   ```bash
-   openssl rand -hex 32 > .auth_secret
-   ```
-
-2. **Create environment file**:
-   ```bash
-   cp .env.example .env
-   # Edit .env and set:
-   # AUTH_SECRET=$(cat .auth_secret)
-   # AUTH_PASSWORD=your-secure-password
-   ```
-
-3. **Start with Docker Compose**:
+1. **Start with Docker Compose**:
    ```bash
    docker-compose up -d
    ```
 
-4. **Access the dashboard**:
+2. **Access the dashboard**:
    - Open http://localhost:3000
    - Login with your password
 
@@ -75,8 +62,6 @@ docker run -d \
   -p 3000:3000 \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v clawpond_workspace:/app/workspace \
-  -e AUTH_SECRET=$(openssl rand -hex 32) \
-  -e AUTH_PASSWORD=your-password \
   clawpond:latest
 ```
 
@@ -84,8 +69,6 @@ docker run -d \
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `AUTH_SECRET` | JWT secret key (required) | - |
-| `AUTH_PASSWORD` | Dashboard password | `admin` |
 | `WORKSPACE_ROOT` | Workspace directory | `./workspace` |
 | `CLAWPOND_PORT` | Dashboard port | `3000` |
 

@@ -1,5 +1,6 @@
 const { spawn } = require('child_process');
 const crypto = require('crypto');
+const path = require('path');
 
 // Check if AUTH_TOKEN is set
 if (!process.env.AUTH_TOKEN) {
@@ -21,18 +22,11 @@ if (!process.env.AUTH_TOKEN) {
   console.log('To persist this token, set AUTH_TOKEN environment variable.');
   console.log('==========================================');
 } else {
-  console.log('Using existing AUTH_TOKEN from environment');
+  console.log('Using existing AUTH_TOKEN from environment: ', process.env.AUTH_TOKEN);
 }
 
-// Start Next.js
-const nextCommand = process.argv[2] || 'dev';
-const args = process.argv.slice(3);
+// Start the Next.js standalone server
+console.log('Starting Next.js standalone server...');
 
-const child = spawn('npx', ['next', nextCommand, ...args], {
-  stdio: 'inherit',
-  env: { ...process.env }
-});
-
-child.on('exit', (code) => {
-  process.exit(code ?? 0);
-});
+// Import and start the standalone server
+require('./server.js');

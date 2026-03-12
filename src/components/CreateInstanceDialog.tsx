@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CreateInstanceOptions } from '@/types';
 import { Template } from '@/lib/template.service';
+import { api } from '@/lib/api-client';
 
 type CreateMode = 'template' | 'custom';
 
@@ -44,7 +45,7 @@ export function CreateInstanceDialog({
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const response = await fetch('/api/templates');
+        const response = await api.get('/api/templates');
         if (response.ok) {
           const data = await response.json();
           setTemplates(data);

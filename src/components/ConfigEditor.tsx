@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ZeroClawConfig } from '@/types';
 import * as TOML from '@iarna/toml';
+import { api } from '@/lib/api-client';
 
 interface EnvVar {
   key: string;
@@ -106,7 +107,7 @@ export function ConfigEditor({
 
       // 从容器中获取环境变量
       try {
-        const response = await fetch(`/api/containers/${containerId}/env`);
+        const response = await api.get(`/api/containers/${containerId}/env`);
         if (response.ok) {
           const data = await response.json();
           const containerEnv = data.env || [];
@@ -258,17 +259,11 @@ export function ConfigEditor({
         configToSave.gateway = gatewayWithoutPort;
       }
 
-      const response = await fetch('/api/templates', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: templateName,
-          description: templateDescription,
-          config: configToSave,
-          sourceInstanceId: containerId,
-        }),
+      const response = await api.post('/api/templates', {
+        name: templateName,
+        description: templateDescription,
+        config: configToSave,
+        sourceInstanceId: containerId,
       });
 
       if (response.ok) {

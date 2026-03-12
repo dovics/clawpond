@@ -7,8 +7,22 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 
+const TOKEN_STORAGE_KEY = 'auth_token';
+
 interface AuthGateProps {
   children: React.ReactNode;
+}
+
+// Helper to make authenticated requests
+export function authFetch(url: string, options: RequestInit = {}) {
+  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`,
+    },
+  });
 }
 
 export function AuthGate({ children }: AuthGateProps) {
@@ -19,13 +33,22 @@ export function AuthGate({ children }: AuthGateProps) {
   const router = useRouter();
 
   useEffect(() => {
-    checkAuth();
+    // Check if token exists in localStorage
+    const savedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (savedToken) {
+      setToken(savedToken);
+      checkAuth(savedToken);
+    } else {
+      setIsAuthenticated(false);
+    }
   }, []);
 
-  const checkAuth = async () => {
+  const checkAuth = async (authToken: string) => {
     try {
       const response = await fetch('/api/auth/check', {
-        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
       });
       setIsAuthenticated(response.ok);
     } catch {
@@ -41,12 +64,16 @@ export function AuthGate({ children }: AuthGateProps) {
     try {
       const response = await fetch('/api/auth/verify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ token }),
       });
 
       if (response.ok) {
+        // Save token to localStorage
+        localStorage.setItem(TOKEN_STORAGE_KEY, token);
         setIsAuthenticated(true);
         router.refresh();
       } else {
@@ -60,17 +87,12 @@ export function AuthGate({ children }: AuthGateProps) {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      setIsAuthenticated(false);
-      router.refresh();
-    } catch {
-      setError('Failed to logout');
-    }
+  const handleLogout = () => {
+    // Remove token from localStorage
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    setToken('');
+    setIsAuthenticated(false);
+    router.refresh();
   };
 
   if (isAuthenticated === null) {
