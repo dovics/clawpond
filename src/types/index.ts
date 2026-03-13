@@ -16,6 +16,7 @@ export interface ZeroClawInstance {
   };
   memoryLimit?: number; // configured limit in MB
   cpuLimit?: number; // configured limit in cores
+  configApplying?: boolean; // indicates if template config is being applied asynchronously
 }
 
 export interface ZeroClawConfig {

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ZeroClawInstance } from '@/types';
-import { Play, Pause, RotateCcw, Trash2, Settings, Activity, Cpu, HardDrive, FileText } from 'lucide-react';
+import { Play, Pause, RotateCcw, Trash2, Settings, Activity, Cpu, HardDrive, FileText, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { buildInstanceUrl } from '@/lib/config';
 
@@ -13,7 +13,7 @@ interface InstanceCardProps {
   onStart: (id: string) => void;
   onStop: (id: string) => void;
   onRestart: (id: string) => void;
-  onDelete: (id: string) => void;
+  onDelete: (instance: ZeroClawInstance) => void;
   onConfig: (instance: ZeroClawInstance) => void;
   onLogs: (instance: ZeroClawInstance) => void;
 }
@@ -28,8 +28,23 @@ export function InstanceCard({
   onLogs,
 }: InstanceCardProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [configApplying, setConfigApplying] = useState(false);
   const isRunning = instance.status === 'running';
   const isStopped = instance.status === 'stopped' || instance.status === 'exited';
+
+  // Handle config applying status
+  useEffect(() => {
+    if (instance.configApplying) {
+      setConfigApplying(true);
+      // Auto-clear the status after 2 minutes (should be done by then)
+      const timer = setTimeout(() => {
+        setConfigApplying(false);
+      }, 120000);
+      return () => clearTimeout(timer);
+    } else {
+      setConfigApplying(false);
+    }
+  }, [instance.configApplying]);
 
   const handleAction = async (action: () => void) => {
     setIsLoading(true);
@@ -59,12 +74,16 @@ export function InstanceCard({
           <div className="space-y-1">
             <CardTitle className="text-lg flex items-center gap-2 text-white">
               {instance.name}
-              <span
-                className={cn(
-                  'w-2 h-2 rounded-full',
-                  isRunning ? 'bg-green-500' : 'bg-primary'
-                )}
-              />
+              {configApplying ? (
+                <Loader2 className="h-4 w-4 text-yellow-500 animate-spin" />
+              ) : (
+                <span
+                  className={cn(
+                    'w-2 h-2 rounded-full',
+                    isRunning ? 'bg-green-500' : 'bg-primary'
+                  )}
+                />
+              )}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
               {instance.port ? `Port: ${instance.port}` : 'Port: Not exposed'}
@@ -75,6 +94,12 @@ export function InstanceCard({
             <CardDescription className="text-xs text-muted-foreground">
               Last Active: {instance.lastActive ? new Date(instance.lastActive).toLocaleString() : 'Never'}
             </CardDescription>
+            {configApplying && (
+              <CardDescription className="text-xs text-yellow-500 flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Applying template configuration...
+              </CardDescription>
+            )}
           </div>
           <div className="flex gap-1">
             <Button
@@ -99,7 +124,7 @@ export function InstanceCard({
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-primary"
-              onClick={() => handleAction(() => onDelete(instance.containerId!))}
+              onClick={() => handleAction(() => onDelete(instance))}
               disabled={isLoading}
               title="Delete"
             >

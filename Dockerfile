@@ -29,7 +29,6 @@ RUN addgroup -g 1001 -S nodejs && \
 
 # Set environment to ensure Next.js knows we're in standalone mode
 ENV NODE_ENV=production \
-    WORKSPACE_ROOT=/app/workspace \
     HOSTNAME=0.0.0.0
 
 # Copy necessary files from builder

@@ -20,7 +20,8 @@ export interface TemplatesIndex {
   templates: TemplateMetadata[];
 }
 
-const TEMPLATES_DIR = path.join(process.cwd(), 'templates');
+// 确保使用绝对路径
+const TEMPLATES_DIR = path.resolve(process.cwd(), 'templates');
 const INDEX_FILE = path.join(TEMPLATES_DIR, 'templates.json');
 
 export function getTemplatesDir(): string {

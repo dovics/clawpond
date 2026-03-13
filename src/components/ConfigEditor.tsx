@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ZeroClawConfig } from '@/types';
 import * as TOML from '@iarna/toml';
 import { api } from '@/lib/api-client';
+import { useToast } from '@/components/ui/toaster';
 
 interface EnvVar {
   key: string;
@@ -46,6 +47,7 @@ export function ConfigEditor({
   memoryLimit: initialMemoryLimit,
   cpuLimit: initialCpuLimit,
 }: ConfigEditorProps) {
+  const { toast } = useToast();
   const [localConfig, setLocalConfig] = useState<ZeroClawConfig>(config);
   const [tomlPreview, setTomlPreview] = useState('');
   const [envVars, setEnvVars] = useState<EnvVar[]>([]);
@@ -245,7 +247,11 @@ export function ConfigEditor({
 
   const handleSaveAsTemplate = async () => {
     if (!templateName.trim()) {
-      alert('Template name is required');
+      toast({
+        title: "Validation Error",
+        description: "Template name is required",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -273,14 +279,26 @@ export function ConfigEditor({
         if (onTemplatesChange) {
           onTemplatesChange();
         }
-        alert('Template saved successfully!');
+        toast({
+          title: "Success",
+          description: "Template saved successfully!",
+          variant: "success",
+        });
       } else {
         const error = await response.json();
-        alert(`Failed to save template: ${error.error}`);
+        toast({
+          title: "Error",
+          description: `Failed to save template: ${error.error}`,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Failed to save template:', error);
-      alert('Failed to save template');
+      toast({
+        title: "Error",
+        description: "Failed to save template",
+        variant: "destructive",
+      });
     } finally {
       setSavingTemplate(false);
     }

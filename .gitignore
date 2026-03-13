@@ -46,3 +46,4 @@ workspace
 
 .vscode
 /templates/
+.claude

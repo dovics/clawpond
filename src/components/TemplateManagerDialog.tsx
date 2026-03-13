@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Template } from '@/lib/template.service';
 import { ZeroClawConfig, ZeroClawInstance } from '@/types';
 import { api } from '@/lib/api-client';
+import { useToast } from '@/components/ui/toaster';
 
 interface TemplateManagerDialogProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export function TemplateManagerDialog({
   onTemplatesChange,
   instances = [],
 }: TemplateManagerDialogProps) {
+  const { toast } = useToast();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedInstance, setSelectedInstance] = useState<string>('');
@@ -96,12 +98,20 @@ export function TemplateManagerDialog({
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
-      alert('Name is required');
+      toast({
+        title: "Validation Error",
+        description: "Name is required",
+        variant: "destructive",
+      });
       return;
     }
 
     if (!selectedInstance) {
-      alert('Please select an instance');
+      toast({
+        title: "Validation Error",
+        description: "Please select an instance",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -110,7 +120,11 @@ export function TemplateManagerDialog({
     try {
       const instance = instances.find(i => i.containerId === selectedInstance);
       if (!instance) {
-        alert('Instance not found');
+        toast({
+          title: "Error",
+          description: "Instance not found",
+          variant: "destructive",
+        });
         setLoading(false);
         return;
       }
@@ -135,13 +149,26 @@ export function TemplateManagerDialog({
         await fetchTemplates();
         onTemplatesChange();
         resetForm();
+        toast({
+          title: "Success",
+          description: "Template created successfully!",
+          variant: "success",
+        });
       } else {
         const error = await response.json();
-        alert(`Failed to create template: ${error.error}`);
+        toast({
+          title: "Error",
+          description: `Failed to create template: ${error.error}`,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Failed to save template:', error);
-      alert('Failed to save template');
+      toast({
+        title: "Error",
+        description: "Failed to save template",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

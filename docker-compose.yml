@@ -11,9 +11,10 @@ services:
       - "${CLAWPOND_PORT:-3000}:3000"
     environment:
       - AUTH_TOKEN=${AUTH_TOKEN:-a0421e2f9e6811518d3ad7ad7b51d6732c1dabc2df8fa011027a9920062b85d0}
+      - MOUNT_WORKSPACE_ROOT=$PWD/workspace
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./workspace:/app/workspace
-      - ./templates:/app/templates
+      - $PWD/workspace:/app/workspace
+      - $PWD/templates:/app/templates
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]

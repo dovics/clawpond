@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { RefreshCw } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,7 @@ type CreateMode = 'template' | 'custom';
 interface CreateInstanceDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (options: CreateInstanceOptions) => void;
+  onCreate: (options: CreateInstanceOptions) => Promise<void>;
   templateChangeTrigger?: number;
 }
 
@@ -34,6 +35,7 @@ export function CreateInstanceDialog({
   const [mode, setMode] = useState<CreateMode>('template');
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [isCreating, setIsCreating] = useState(false);
 
   // Instance name (always required)
   const [name, setName] = useState('');
@@ -71,8 +73,10 @@ export function CreateInstanceDialog({
     }
   }, [isOpen]);
 
-  const handleCreate = () => {
-    if (!name.trim()) return;
+  const handleCreate = async () => {
+    if (!name.trim() || isCreating) return;
+
+    setIsCreating(true);
 
     const options: CreateInstanceOptions = {
       name: name.trim(),
@@ -90,7 +94,11 @@ export function CreateInstanceDialog({
     }
     // Custom mode uses default config - no additional config needed
 
-    onCreate(options);
+    try {
+      await onCreate(options);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
@@ -111,23 +119,25 @@ export function CreateInstanceDialog({
         <div className="space-y-4 py-4">
           {/* Mode Selection */}
           <div className="flex gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className={`flex items-center gap-2 ${isCreating ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
               <input
                 type="radio"
                 name="mode"
                 checked={mode === 'template'}
                 onChange={() => setMode('template')}
                 className="accent-red-500"
+                disabled={isCreating}
               />
               <span className="text-white">From Template</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className={`flex items-center gap-2 ${isCreating ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
               <input
                 type="radio"
                 name="mode"
                 checked={mode === 'custom'}
                 onChange={() => setMode('custom')}
                 className="accent-red-500"
+                disabled={isCreating}
               />
               <span className="text-white">Custom Config</span>
             </label>
@@ -144,6 +154,7 @@ export function CreateInstanceDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="text-white"
+              disabled={isCreating}
             />
           </div>
 
@@ -162,7 +173,8 @@ export function CreateInstanceDialog({
                       id="template"
                       value={selectedTemplateId}
                       onChange={(e) => setSelectedTemplateId(e.target.value)}
-                      className="w-full bg-gray-800 text-white border border-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full bg-gray-800 text-white border border-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                      disabled={isCreating}
                     >
                       {templates.map((template) => (
                         <option key={template.id} value={template.id}>
@@ -238,6 +250,7 @@ export function CreateInstanceDialog({
               value={port || ''}
               onChange={(e) => setPort(e.target.value ? parseInt(e.target.value) : undefined)}
               className="text-white"
+              disabled={isCreating}
             />
             <p className="text-xs text-gray-500">
               Leave empty to not expose port externally. Default resources: 0.2 cores, 100MB RAM
@@ -246,19 +259,32 @@ export function CreateInstanceDialog({
         </div>
 
         <DialogFooter>
+          {isCreating && (
+            <div className="flex-1 text-center">
+              <p className="text-sm text-gray-400">Creating instance... Please wait.</p>
+            </div>
+          )}
           <Button
             variant="outline"
             onClick={onClose}
             className="text-gray-300 border-gray-600 hover:bg-gray-800"
+            disabled={isCreating}
           >
             Cancel
           </Button>
           <Button
             onClick={handleCreate}
-            disabled={!name.trim() || (mode === 'template' && templates.length === 0)}
+            disabled={!name.trim() || (mode === 'template' && templates.length === 0) || isCreating}
             className="bg-primary text-primary-foreground"
           >
-            Create
+            {isCreating ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              'Create'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

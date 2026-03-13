@@ -1,37 +1,31 @@
 import Docker from 'dockerode';
 import { ContainerStats, ZeroClawInstance, CreateInstanceOptions } from '@/types';
 import * as TOML from '@iarna/toml';
-import { execSync } from 'child_process';
+import path from 'path';
 
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
-// 从环境变量读取工作目录，默认使用项目根目录下的 ./workspace
-const WORKSPACE_ROOT = process.env.WORKSPACE_ROOT || './workspace';
+// 宿主机上的工作目录固定为当前目录下的 workspace 文件夹
+const WORKSPACE_ROOT = path.join(process.cwd(), 'workspace');
+
+// Docker 容器内的挂载点路径（用于 bind mount），从环境变量读取
+const MOUNT_WORKSPACE_ROOT = process.env.MOUNT_WORKSPACE_ROOT || WORKSPACE_ROOT;
 
 /**
  * 获取当前进程的 UID 和 GID
- * 优先从环境变量读取，否则通过系统命令获取
+ * 直接获取当前运行进程的用户和组 ID
  */
 function getUidGid(): { uid: number; gid: number } {
-  const envUid = process.env.HOST_UID;
-  const envGid = process.env.HOST_GID;
-
-  let uid = 1000;
-  let gid = 1000;
-
-  if (envUid && envGid) {
-    uid = parseInt(envUid, 10);
-    gid = parseInt(envGid, 10);
-  } else {
-    try {
-      uid = parseInt(execSync('id -u').toString().trim(), 10);
-      gid = parseInt(execSync('id -g').toString().trim(), 10);
-    } catch (error) {
-      console.warn('Failed to get UID/GID, using defaults (1000:1000)', error);
-    }
+  try {
+    // 使用 Node.js 内置方法获取当前进程的用户和组 ID
+    return {
+      uid: typeof process.getuid === 'function' ? process.getuid() : 1000,
+      gid: typeof process.getgid === 'function' ? process.getgid() : 1000,
+    };
+  } catch (error) {
+    console.warn('Failed to get UID/GID, using defaults (1000:1000)', error);
+    return { uid: 1000, gid: 1000 };
   }
-
-  return { uid, gid };
 }
 
 const DEFAULT_CONFIG = `default_provider = "openrouter"
@@ -235,19 +229,24 @@ export class DockerService {
       const path = require('path');
 
       // 使用环境变量指定的工作目录，为每个实例创建子目录
-      const instanceDirName = `openclaw-${options.name.toLowerCase().replace(/\s+/g, '-')}`;
-      const configDir = path.join(process.cwd(), WORKSPACE_ROOT, instanceDirName);
-      const zeroclawDir = path.join(configDir, '.zeroclaw');
+      // Sanitize the name to only use valid Docker volume name characters [a-zA-Z0-9_.-]
+      const instanceDirName = `openclaw-${options.name.toLowerCase().replace(/[^a-z0-9_.-]/g, '-')}`;
+
+      // 宿主机上的实际路径（用于文件操作）
+      const hostConfigDir = path.join(WORKSPACE_ROOT, instanceDirName);
+      const zeroclawDir = path.join(hostConfigDir, '.zeroclaw');
+
+      // Docker 容器内的挂载路径（用于 bind mount）
+      const mountConfigDir = path.join(MOUNT_WORKSPACE_ROOT, instanceDirName);
 
       // Create directory structure (system will create config file automatically)
       fs.mkdirSync(zeroclawDir, { recursive: true });
 
-      // Write config file if provided
-      if (options.config && Object.keys(options.config).length > 0) {
-        const configPath = path.join(zeroclawDir, 'config.toml');
-        const configContent = TOML.stringify(configOverride);
-        fs.writeFileSync(configPath, configContent, 'utf-8');
-      }
+      // Check if we have template config that should be applied asynchronously
+      const hasTemplateConfig = options.config && Object.keys(options.config).length > 0;
+
+      // Don't write config file immediately - let the system create default config first
+      // We'll apply template config asynchronously after container is ready
 
       const env = [
         `ZEROCLAW_GATEWAY_PORT=${port}`,
@@ -274,13 +273,13 @@ export class DockerService {
 
       // Build container config
       const containerConfig: any = {
-        name: `openclaw-${options.name.toLowerCase().replace(/\s+/g, '-')}`,
+        name: `openclaw-${options.name.toLowerCase().replace(/[^a-z0-9_.-]/g, '-')}`,
         Image: 'ghcr.io/zeroclaw-labs/zeroclaw:latest',
         Cmd: ['daemon'],
         User: `${uid}:${gid}`,
         Env: env,
         HostConfig: {
-          Binds: [`${configDir}:/zeroclaw-data`],
+          Binds: [`${mountConfigDir}:/zeroclaw-data`],
           RestartPolicy: {
             Name: 'unless-stopped'
           },
@@ -346,6 +345,14 @@ export class DockerService {
         }
       }
 
+      // Apply template config asynchronously if provided
+      if (hasTemplateConfig) {
+        // Don't wait for this to complete - return immediately to user
+        this.applyConfigAsync(container.id, configOverride, instanceDirName).catch(error => {
+          console.error('Failed to apply template config asynchronously:', error);
+        });
+      }
+
       return {
         id: container.id.substring(0, 12),
         name: options.name,
@@ -354,6 +361,8 @@ export class DockerService {
         port: shouldExposePort ? port : undefined,
         config: configOverride,
         createdAt: new Date().toISOString(),
+        // Add flag to indicate config is being applied
+        configApplying: hasTemplateConfig,
       };
     } catch (error) {
       console.error('Error creating instance:', error);
@@ -418,6 +427,33 @@ export class DockerService {
   }
 
   /**
+   * Delete workspace directory for a container
+   */
+  async deleteWorkspace(containerId: string): Promise<boolean> {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+
+      const container = docker.getContainer(containerId);
+      const containerInfo = await container.inspect();
+      const containerName = containerInfo.Name.replace(/^\//, '');
+
+      const workspaceDir = path.join(WORKSPACE_ROOT, containerName);
+
+      if (fs.existsSync(workspaceDir)) {
+        fs.rmSync(workspaceDir, { recursive: true, force: true });
+        console.log(`Deleted workspace directory: ${workspaceDir}`);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error deleting workspace:', error);
+      return false;
+    }
+  }
+
+  /**
    * Update container configuration
    * @returns The container ID to use for subsequent operations (may be new if container was recreated)
    */
@@ -430,7 +466,7 @@ export class DockerService {
     // Get the config file path on the host
     // Container name is the same as directory name (e.g., "openclaw-zeroagent")
     const containerName = containerInfo.Name.replace(/^\//, '');
-    const configPath = path.join(process.cwd(), WORKSPACE_ROOT, containerName, '.zeroclaw', 'config.toml');
+    const configPath = path.join(WORKSPACE_ROOT, containerName, '.zeroclaw', 'config.toml');
 
     // Write config to file on host (which is mounted into container)
     const configContent = TOML.stringify(config);
@@ -540,8 +576,8 @@ export class DockerService {
       }
     });
 
-    // Get the config directory path
-    const configDir = path.join(process.cwd(), WORKSPACE_ROOT, containerName);
+    // Get the config directory paths for Docker bind mount
+    const mountConfigDir = path.join(MOUNT_WORKSPACE_ROOT, containerName);
 
     // Create new container config
     const newContainerConfig = {
@@ -553,7 +589,7 @@ export class DockerService {
       ExposedPorts: containerInfo.Config.ExposedPorts,
       HostConfig: {
         PortBindings: containerInfo.HostConfig.PortBindings,
-        Binds: [`${configDir}:/zeroclaw-data`],
+        Binds: [`${mountConfigDir}:/zeroclaw-data`],
         RestartPolicy: containerInfo.HostConfig.RestartPolicy,
         Memory: containerInfo.HostConfig.Memory,
         NanoCpus: containerInfo.HostConfig.NanoCpus,
@@ -617,10 +653,10 @@ export class DockerService {
 
       // Check if limits actually changed
       const memoryChanged = newMemoryMB !== undefined && currentMemoryBytes !== undefined &&
-                          Math.abs(currentMemoryBytes - (newMemoryMB * 1024 * 1024)) > 1024; // Allow 1KB tolerance
+        Math.abs(currentMemoryBytes - (newMemoryMB * 1024 * 1024)) > 1024; // Allow 1KB tolerance
 
       const cpuChanged = newCpuCores !== undefined && currentCpuNanos !== undefined &&
-                        Math.abs(currentCpuNanos - (newCpuCores * 1000000000)) > 1000000; // Allow 0.001 CPU tolerance
+        Math.abs(currentCpuNanos - (newCpuCores * 1000000000)) > 1000000; // Allow 0.001 CPU tolerance
 
       if (!memoryChanged && !cpuChanged) {
         console.log('Resource limits unchanged, skipping container recreation');
@@ -651,6 +687,7 @@ export class DockerService {
       // Docker doesn't support updating resource limits on running containers
       // We need to recreate the container
       const containerName = containerInfo.Name.replace(/^\//, '');
+      const mountConfigDir = path.join(MOUNT_WORKSPACE_ROOT, containerName);
 
       const wasRunning = containerInfo.State.Status === 'running';
 
@@ -668,6 +705,7 @@ export class DockerService {
         ExposedPorts: containerInfo.Config.ExposedPorts,
         HostConfig: {
           ...containerInfo.HostConfig,
+          Binds: [`${mountConfigDir}:/zeroclaw-data`],
           ...newLimits,
         },
         Labels: newLabels,
@@ -768,7 +806,7 @@ export class DockerService {
       // First try to read from actual config file in workspace
       // Container name is the same as directory name (e.g., "openclaw-zeroagent")
       const containerName = containerInfo.Name.replace(/^\//, '');
-      const configPath = path.join(process.cwd(), WORKSPACE_ROOT, containerName, '.zeroclaw', 'config.toml');
+      const configPath = path.join(WORKSPACE_ROOT, containerName, '.zeroclaw', 'config.toml');
 
       if (fs.existsSync(configPath)) {
         const configContent = fs.readFileSync(configPath, 'utf-8');
@@ -788,6 +826,72 @@ export class DockerService {
     } catch (error) {
       console.error('Error reading config from container:', error);
       return TOML.parse(DEFAULT_CONFIG);
+    }
+  }
+
+  /**
+   * Apply configuration asynchronously after container is ready
+   * This waits for the initial config file to be generated, then applies template config
+   */
+  private async applyConfigAsync(
+    containerId: string,
+    config: any,
+    instanceDirName: string
+  ): Promise<void> {
+    const fs = require('fs');
+    const path = require('path');
+    const maxRetries = 30; // 30 retries * 2 seconds = 1 minute max wait
+    let retries = 0;
+
+    console.log(`[Async Config] Starting to apply config for container ${containerId.substring(0, 12)}`);
+
+    try {
+      // Wait for the initial config file to be created by the system
+      const configPath = path.join(WORKSPACE_ROOT, instanceDirName, '.zeroclaw', 'config.toml');
+
+      while (retries < maxRetries) {
+        if (fs.existsSync(configPath)) {
+          console.log(`[Async Config] Initial config file found at retry ${retries + 1}`);
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        retries++;
+      }
+
+      if (retries >= maxRetries) {
+        throw new Error('Initial config file was not created after 1 minute');
+      }
+
+      // Wait a bit more to ensure the file is fully written
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Read the current config
+      const currentConfigContent = fs.readFileSync(configPath, 'utf-8');
+      const currentConfig = TOML.parse(currentConfigContent) as any;
+
+      // Merge template config with current config (template takes precedence)
+      const mergedConfig = {
+        ...currentConfig,
+        ...config,
+      };
+
+      // Write the merged config back
+      const newConfigContent = TOML.stringify(mergedConfig);
+      fs.writeFileSync(configPath, newConfigContent, 'utf-8');
+
+      console.log(`[Async Config] Successfully applied template config for container ${containerId.substring(0, 12)}`);
+
+      // Restart the container to apply the new config
+      try {
+        const container = docker.getContainer(containerId);
+        await container.restart();
+        console.log(`[Async Config] Restarted container ${containerId.substring(0, 12)} to apply config`);
+      } catch (restartError) {
+        console.error(`[Async Config] Failed to restart container:`, restartError);
+      }
+    } catch (error) {
+      console.error(`[Async Config] Failed to apply config for container ${containerId.substring(0, 12)}:`, error);
+      throw error;
     }
   }
 }

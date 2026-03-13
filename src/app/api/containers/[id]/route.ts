@@ -31,8 +31,19 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    const body = await request.json().catch(() => ({}));
+    const { deleteWorkspace: deleteWorkspaceFlag } = body;
+
+    // Delete the container
     const success = await dockerService.deleteContainer(id);
-    return NextResponse.json({ success });
+
+    // Delete workspace if requested
+    let workspaceDeleted = false;
+    if (deleteWorkspaceFlag && success) {
+      workspaceDeleted = await dockerService.deleteWorkspace(id);
+    }
+
+    return NextResponse.json({ success, workspaceDeleted });
   } catch (error) {
     console.error('Error deleting container:', error);
     return NextResponse.json(

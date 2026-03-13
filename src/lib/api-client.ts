@@ -42,9 +42,14 @@ export const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   }),
-  delete: (url: string) => apiFetch(url, {
-    method: 'DELETE',
-  }),
+  delete: (url: string, data?: any) => {
+    const options: RequestInit = { method: 'DELETE' };
+    if (data) {
+      options.headers = { 'Content-Type': 'application/json' };
+      options.body = JSON.stringify(data);
+    }
+    return apiFetch(url, options);
+  },
 };
 
 /**
