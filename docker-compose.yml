@@ -6,6 +6,7 @@ services:
     image: dovics1/clawpond:latest
     container_name: clawpond
     restart: unless-stopped
+    user: root
     ports:
       - "${CLAWPOND_PORT:-3000}:3000"
     environment:
