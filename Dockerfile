@@ -20,8 +20,8 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Install Docker CLI for container management
-RUN apk add --no-cache docker-cli
+# Install Docker CLI for container management and curl for health checks
+RUN apk add --no-cache docker-cli curl
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -31,7 +31,8 @@ RUN addgroup -g 1001 -S nodejs && \
 ENV NODE_ENV=production \
     HOST_UID=1001 \
     HOST_GID=1001 \
-    WORKSPACE_ROOT=/app/workspace
+    WORKSPACE_ROOT=/app/workspace \
+    HOSTNAME=0.0.0.0
 
 # Copy necessary files from builder
 # IMPORTANT: Copy standalone files FIRST, then copy our custom files
@@ -46,9 +47,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/src ./src
 # Create workspace directory for container configs
 RUN mkdir -p /app/workspace && \
     chown -R nextjs:nodejs /app
-
-# Switch to non-root user
-USER nextjs
 
 # Expose port
 EXPOSE 3000

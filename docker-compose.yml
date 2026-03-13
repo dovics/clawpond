@@ -1,5 +1,4 @@
 services:
-  # ClawPond - ZeroClaw 管理界面
   clawpond:
     build:
       context: .
@@ -7,32 +6,13 @@ services:
     image: dovics1/clawpond:latest
     container_name: clawpond
     restart: unless-stopped
-    user: root
     ports:
       - "${CLAWPOND_PORT:-3000}:3000"
     environment:
-      - NODE_ENV=production
-      - HOST_UID=1001
-      - HOST_GID=1001
-      - WORKSPACE_ROOT=/app/workspace
-      # Auth settings (AUTH_TOKEN is used for authentication)
       - AUTH_TOKEN=${AUTH_TOKEN:-a0421e2f9e6811518d3ad7ad7b51d6732c1dabc2df8fa011027a9920062b85d0}
     volumes:
-      # Mount Docker socket for container management
       - /var/run/docker.sock:/var/run/docker.sock
-      # Persist workspace data
       - ./workspace:/app/workspace
-      # Persist auth token data
-      - ./data:/app/data
-    networks:
-      - clawpond_network
+      - ./templates:/app/templates
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
-networks:
-  clawpond_network:
-    driver: bridge
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
