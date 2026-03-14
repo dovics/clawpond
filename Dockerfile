@@ -34,7 +34,20 @@ ENV NODE_ENV=production \
 # Copy necessary files from builder
 # IMPORTANT: Copy standalone files FIRST, then copy our custom files
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+
+# Copy Next.js standalone server files to the working directory
+# Next.js standalone expects the static files at .next/static relative to where server.js runs
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone/server.js ./standalone-server.js
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone/node_modules ./node_modules
+
+# Copy the .next directory structure
+# First copy the standalone .next directory (contains manifests and required files)
+RUN mkdir -p .next
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone/.next ./.next
+
+# IMPORTANT: Next.js standalone mode requires static files to be copied separately
+# These are NOT included in the standalone output and must be copied from .next/static
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy our custom auth server as a separate file

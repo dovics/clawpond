@@ -45,11 +45,14 @@ if (mode === 'dev') {
   console.log('Starting Next.js standalone server...');
 
   try {
-    // Try to require the standalone server
-    require('./.next/standalone/server.js');
+    // The standalone server is at standalone-server.js (Next.js generated)
+    // We load it to start the Next.js application
+    const standaloneServerPath = path.join(__dirname, 'standalone-server.js');
+    require(standaloneServerPath);
   } catch (err) {
     console.error('Standalone server not found. Please run: npm run build');
     console.error('Or use development mode: npm run dev');
+    console.error('Error:', err.message);
     process.exit(1);
   }
 }
