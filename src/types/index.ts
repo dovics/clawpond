@@ -126,6 +126,17 @@ export interface ZeroClawConfig {
     max_response_size?: number;
     timeout_secs?: number;
   };
+  agent?: {
+    compact_context?: boolean;
+    max_tool_iterations?: number;
+    max_history_messages?: number;
+    parallel_tools?: boolean;
+    tool_dispatcher?: 'auto' | 'sequential' | 'parallel';
+  };
+  skills?: {
+    open_skills_enabled?: boolean;
+    prompt_injection_mode?: 'full' | 'partial' | 'off';
+  };
   [key: string]: any;
 }
 

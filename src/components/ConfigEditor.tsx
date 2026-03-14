@@ -411,16 +411,246 @@ export function ConfigEditor({
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-6" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
+          <TabsList className="grid w-full grid-cols-5" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
             <TabsTrigger value="general" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">General</TabsTrigger>
+            <TabsTrigger value="model" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Model</TabsTrigger>
             <TabsTrigger value="autonomy" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Autonomy</TabsTrigger>
             <TabsTrigger value="channels" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Channels</TabsTrigger>
-            <TabsTrigger value="security" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Security</TabsTrigger>
-            <TabsTrigger value="advanced" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Advanced</TabsTrigger>
             <TabsTrigger value="agents" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Agents</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="port" className="text-white">Gateway Port</Label>
+              <Input
+                id="port"
+                type="number"
+                value={localConfig.gateway?.port || 42617}
+                onChange={(e) => updateConfig(['gateway', 'port'], parseInt(e.target.value))}
+                className="text-white"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Internal gateway port. This will be automatically synced when you set the Docker Listening Port below.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="publicBind" className="text-white">Allow Public Bind</Label>
+              <Switch
+                id="publicBind"
+                checked={localConfig.gateway?.allow_public_bind || false}
+                onCheckedChange={(checked) => updateConfig(['gateway', 'allow_public_bind'], checked)}
+              />
+            </div>
+
+            {/* Agent Configuration */}
+            <div className="mt-6 space-y-4 pt-4 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+              <h3 className="text-white font-medium">Agent Configuration</h3>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="compactContext" className="text-white">Compact Context</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Enable compact context mode to reduce token usage
+                  </p>
+                </div>
+                <Switch
+                  id="compactContext"
+                  checked={localConfig.agent?.compact_context || false}
+                  onCheckedChange={(checked) => updateConfig(['agent', 'compact_context'], checked)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="maxToolIterations" className="text-white">Max Tool Iterations</Label>
+                <Input
+                  id="maxToolIterations"
+                  type="number"
+                  value={localConfig.agent?.max_tool_iterations || 30}
+                  onChange={(e) => updateConfig(['agent', 'max_tool_iterations'], parseInt(e.target.value))}
+                  className="text-white"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Maximum number of tool iterations per request
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="maxHistoryMessages" className="text-white">Max History Messages</Label>
+                <Input
+                  id="maxHistoryMessages"
+                  type="number"
+                  value={localConfig.agent?.max_history_messages || 50}
+                  onChange={(e) => updateConfig(['agent', 'max_history_messages'], parseInt(e.target.value))}
+                  className="text-white"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Maximum number of messages to keep in history
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="parallelTools" className="text-white">Parallel Tools</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Enable parallel tool execution
+                  </p>
+                </div>
+                <Switch
+                  id="parallelTools"
+                  checked={localConfig.agent?.parallel_tools || false}
+                  onCheckedChange={(checked) => updateConfig(['agent', 'parallel_tools'], checked)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="toolDispatcher" className="text-white">Tool Dispatcher</Label>
+                <select
+                  id="toolDispatcher"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-white"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                  value={localConfig.agent?.tool_dispatcher || 'auto'}
+                  onChange={(e) => updateConfig(['agent', 'tool_dispatcher'], e.target.value)}
+                >
+                  <option value="auto">Auto</option>
+                  <option value="sequential">Sequential</option>
+                  <option value="parallel">Parallel</option>
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Tool execution dispatching strategy
+                </p>
+              </div>
+            </div>
+
+            {/* Skills Configuration */}
+            <div className="mt-6 space-y-4 pt-4 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+              <h3 className="text-white font-medium">Skills Configuration</h3>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="openSkillsEnabled" className="text-white">Open Skills Enabled</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Enable open skills functionality
+                  </p>
+                </div>
+                <Switch
+                  id="openSkillsEnabled"
+                  checked={localConfig.skills?.open_skills_enabled || false}
+                  onCheckedChange={(checked) => updateConfig(['skills', 'open_skills_enabled'], checked)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="promptInjectionMode" className="text-white">Prompt Injection Mode</Label>
+                <select
+                  id="promptInjectionMode"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-white"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                  value={localConfig.skills?.prompt_injection_mode || 'full'}
+                  onChange={(e) => updateConfig(['skills', 'prompt_injection_mode'], e.target.value)}
+                >
+                  <option value="full">Full</option>
+                  <option value="partial">Partial</option>
+                  <option value="off">Off</option>
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Prompt injection protection mode
+                </p>
+              </div>
+            </div>
+
+            {/* Docker Resource Limits */}
+            <div className="mt-6 space-y-4">
+              <div className="p-3 rounded-md" style={{ backgroundColor: 'rgba(255, 59, 48, 0.1)', border: '1px solid rgba(255, 59, 48, 0.3)' }}>
+                <Label className="text-white font-semibold">Docker Resource Limits & Port</Label>
+                <p className="text-xs mt-1 text-muted-foreground">
+                  Configure CPU, memory limits and listening port for the container. Minimum values: CPU 0.1 cores, Memory 50MB. Requires container recreation to apply port changes.
+                </p>
+
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="dockerMemory" className="text-white">Memory Limit (MB)</Label>
+                    <Input
+                      id="dockerMemory"
+                      type="number"
+                      step="1"
+                      value={isNaN(memoryLimit) ? '' : memoryLimit}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setMemoryLimit(NaN);
+                        } else {
+                          const parsed = parseInt(value);
+                          setMemoryLimit(isNaN(parsed) ? NaN : parsed);
+                        }
+                      }}
+                      className="text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Memory limit in megabytes (min: 50MB, recommended: 256-16384)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="dockerCpu" className="text-white">CPU Limit (cores)</Label>
+                    <Input
+                      id="dockerCpu"
+                      type="number"
+                      step="0.01"
+                      value={isNaN(cpuLimit) ? '' : cpuLimit}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setCpuLimit(NaN);
+                        } else {
+                          const parsed = parseFloat(value);
+                          setCpuLimit(isNaN(parsed) ? NaN : parsed);
+                        }
+                      }}
+                      className="text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      CPU cores, supports decimals (min: 0.1, recommended: 0.25-16)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="dockerPort" className="text-white">Listening Port</Label>
+                    <Input
+                      id="dockerPort"
+                      type="number"
+                      step="1"
+                      min="1"
+                      max="65535"
+                      value={port === undefined ? '' : port}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          syncPortWithGateway(undefined);
+                        } else {
+                          const parsed = parseInt(value);
+                          syncPortWithGateway((parsed >= 1 && parsed <= 65535) ? parsed : undefined);
+                        }
+                      }}
+                      className="text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Container listening port (1-65535). Leave empty to not expose port externally.
+                      This will automatically sync with the Gateway port configuration.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="model" className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="provider" className="text-white">Default Provider</Label>
               <select
@@ -507,30 +737,6 @@ export function ConfigEditor({
                 onChange={(e) => updateConfig(['default_temperature'], parseFloat(e.target.value))}
                 className="text-white"
                 style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="port" className="text-white">Gateway Port</Label>
-              <Input
-                id="port"
-                type="number"
-                value={localConfig.gateway?.port || 42617}
-                onChange={(e) => updateConfig(['gateway', 'port'], parseInt(e.target.value))}
-                className="text-white"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
-              />
-              <p className="text-xs text-muted-foreground">
-                Internal gateway port. This will be automatically synced when you set the Docker Listening Port below.
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label htmlFor="publicBind" className="text-white">Allow Public Bind</Label>
-              <Switch
-                id="publicBind"
-                checked={localConfig.gateway?.allow_public_bind || false}
-                onCheckedChange={(checked) => updateConfig(['gateway', 'allow_public_bind'], checked)}
               />
             </div>
           </TabsContent>
@@ -983,62 +1189,6 @@ export function ConfigEditor({
                   style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
                 />
               </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="security" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="maxMemory" className="text-white">Max Memory (MB)</Label>
-              <Input
-                id="maxMemory"
-                type="number"
-                value={localConfig.security?.resources?.max_memory_mb || 512}
-                onChange={(e) => updateConfig(['security', 'resources', 'max_memory_mb'], parseInt(e.target.value))}
-                className="text-white"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="maxCpuTime" className="text-white">Max CPU Time (seconds)</Label>
-              <Input
-                id="maxCpuTime"
-                type="number"
-                value={localConfig.security?.resources?.max_cpu_time_seconds || 60}
-                onChange={(e) => updateConfig(['security', 'resources', 'max_cpu_time_seconds'], parseInt(e.target.value))}
-                className="text-white"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="maxSubprocesses" className="text-white">Max Subprocesses</Label>
-              <Input
-                id="maxSubprocesses"
-                type="number"
-                value={localConfig.security?.resources?.max_subprocesses || 10}
-                onChange={(e) => updateConfig(['security', 'resources', 'max_subprocesses'], parseInt(e.target.value))}
-                className="text-white"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label htmlFor="memoryMonitoring" className="text-white">Memory Monitoring</Label>
-              <Switch
-                id="memoryMonitoring"
-                checked={localConfig.security?.resources?.memory_monitoring !== false}
-                onCheckedChange={(checked) => updateConfig(['security', 'resources', 'memory_monitoring'], checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label htmlFor="auditEnabled" className="text-white">Audit Logging</Label>
-              <Switch
-                id="auditEnabled"
-                checked={localConfig.security?.audit?.enabled !== false}
-                onCheckedChange={(checked) => updateConfig(['security', 'audit', 'enabled'], checked)}
-              />
             </div>
           </TabsContent>
 
