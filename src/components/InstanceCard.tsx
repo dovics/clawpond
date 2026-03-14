@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ZeroClawInstance } from '@/types';
-import { Play, Pause, RotateCcw, Trash2, Settings, Activity, Cpu, HardDrive, FileText, Loader2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Trash2, Settings, Activity, Cpu, HardDrive, FileText, Loader2, Terminal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { buildInstanceUrl } from '@/lib/config';
 
@@ -16,6 +16,7 @@ interface InstanceCardProps {
   onDelete: (instance: ZeroClawInstance) => void;
   onConfig: (instance: ZeroClawInstance) => void;
   onLogs: (instance: ZeroClawInstance) => void;
+  onConsole: (instance: ZeroClawInstance) => void;
 }
 
 export function InstanceCard({
@@ -26,6 +27,7 @@ export function InstanceCard({
   onDelete,
   onConfig,
   onLogs,
+  onConsole,
 }: InstanceCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [configApplying, setConfigApplying] = useState(false);
@@ -102,6 +104,16 @@ export function InstanceCard({
             )}
           </div>
           <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-white"
+              onClick={() => onConsole(instance)}
+              title="Open Console"
+              disabled={!isRunning}
+            >
+              <Terminal className="h-4 w-4" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"

@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { CreateInstanceOptions } from '@/types';
 import { Template } from '@/lib/template.service';
 import { api } from '@/lib/api-client';
@@ -43,6 +44,10 @@ export function CreateInstanceDialog({
   // Port (optional)
   const [port, setPort] = useState<number | undefined>();
 
+  // Web permissions (default to disabled for security)
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
+  const [webFetchEnabled, setWebFetchEnabled] = useState(false);
+
   // Fetch templates
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -70,6 +75,8 @@ export function CreateInstanceDialog({
     if (isOpen) {
       setName('');
       setPort(undefined);
+      setWebSearchEnabled(false);
+      setWebFetchEnabled(false);
     }
   }, [isOpen]);
 
@@ -90,9 +97,42 @@ export function CreateInstanceDialog({
       if (template) {
         // Use the complete config from template
         options.config = template.config;
+
+        // Override web permissions with user selection
+        if (options.config) {
+          options.config.web_search = {
+            enabled: webSearchEnabled,
+            provider: 'duckduckgo', // Default provider
+            max_results: 5,
+            timeout_secs: 15,
+          };
+          options.config.web_fetch = {
+            enabled: webFetchEnabled,
+            allowed_domains: ['*'], // Allow all domains by default
+            blocked_domains: [],
+            max_response_size: 500000,
+            timeout_secs: 30,
+          };
+        }
       }
+    } else {
+      // Custom mode - add web permissions config
+      options.config = {
+        web_search: {
+          enabled: webSearchEnabled,
+          provider: 'duckduckgo',
+          max_results: 5,
+          timeout_secs: 15,
+        },
+        web_fetch: {
+          enabled: webFetchEnabled,
+          allowed_domains: ['*'],
+          blocked_domains: [],
+          max_response_size: 500000,
+          timeout_secs: 30,
+        },
+      };
     }
-    // Custom mode uses default config - no additional config needed
 
     try {
       await onCreate(options);
@@ -255,6 +295,38 @@ export function CreateInstanceDialog({
             <p className="text-xs text-gray-500">
               Leave empty to not expose port externally. Default resources: 0.2 cores, 100MB RAM
             </p>
+          </div>
+
+          {/* Web Permissions */}
+          <div className="border-t border-gray-700 my-2" />
+          <div className="space-y-3">
+            <Label className="text-white text-sm">Web Permissions</Label>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="web-search" className="text-white text-sm">Web Search</Label>
+                <p className="text-xs text-gray-500">Allow agent to search the web</p>
+              </div>
+              <Switch
+                id="web-search"
+                checked={webSearchEnabled}
+                onCheckedChange={setWebSearchEnabled}
+                disabled={isCreating}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="web-fetch" className="text-white text-sm">Web Fetch</Label>
+                <p className="text-xs text-gray-500">Allow agent to fetch web pages</p>
+              </div>
+              <Switch
+                id="web-fetch"
+                checked={webFetchEnabled}
+                onCheckedChange={setWebFetchEnabled}
+                disabled={isCreating}
+              />
+            </div>
           </div>
         </div>
 

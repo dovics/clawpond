@@ -20,8 +20,8 @@ const nextConfig: NextConfig = {
   // Handle native modules that Turbopack cannot process
   webpack: (config, { isServer }) => {
     if (isServer) {
-      // Exclude native modules from bundling
-      config.externals = [...(config.externals || []), 'ssh2', 'docker-modem'];
+      // Only exclude ssh2 (native module), but bundle docker-modem
+      config.externals = [...(config.externals || []), 'ssh2'];
     }
     return config;
   },

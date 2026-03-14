@@ -33,7 +33,7 @@ const DEFAULT_CONFIG: ZeroClawConfig = {
   default_model: 'anthropic/claude-sonnet-4',
   default_temperature: 0.7,
   autonomy: {
-    level: 'normal',
+    level: 'supervised',
     workspace_only: false,
     require_approval_for_medium_risk: true,
     block_high_risk_commands: true,
@@ -286,13 +286,13 @@ export function TemplateCreator({
               <Label htmlFor="autonomyLevel" className="text-white">Autonomy Level</Label>
               <select
                 id="autonomyLevel"
-                value={getConfigValue('autonomy.level', 'normal')}
+                value={getConfigValue('autonomy.level', 'supervised')}
                 onChange={(e) => updateConfig('autonomy.level', e.target.value)}
                 className="w-full bg-gray-800 text-white border border-gray-600 rounded-md px-3 py-2"
               >
-                <option value="low">Low - Requires approval for most actions</option>
-                <option value="normal">Normal - Balanced autonomy</option>
-                <option value="high">High - Minimal supervision</option>
+                <option value="readonly">Readonly - No actions allowed</option>
+                <option value="supervised">Supervised - Requires approval</option>
+                <option value="full">Full - Autonomous actions</option>
               </select>
             </div>
 

@@ -65,6 +65,15 @@ export function ConfigEditor({
   const [memoryLimit, setMemoryLimit] = useState(initialMemoryLimit || 500);
   const [cpuLimit, setCpuLimit] = useState(initialCpuLimit || 0.5);
   const [port, setPort] = useState(initialPort);
+
+  // Sync Docker port with gateway port
+  const syncPortWithGateway = (newPort: number | undefined) => {
+    setPort(newPort);
+    // Always update gateway port to match Docker port
+    // If Docker port is undefined (not exposed), use default gateway port
+    const gatewayPort = newPort !== undefined ? newPort : 42617;
+    updateConfig(['gateway', 'port'], gatewayPort);
+  };
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
@@ -123,6 +132,16 @@ export function ConfigEditor({
         setTomlPreview(TOML.stringify(normalizedConfig));
       } catch (error) {
         console.error('Error converting config to TOML:', error);
+      }
+
+      // Initialize port: if Docker port is set, use it; otherwise check gateway port
+      const dockerPort = initialPort;
+      const gatewayPort = normalizedConfig.gateway?.port;
+      if (dockerPort !== undefined) {
+        setPort(dockerPort);
+      } else if (gatewayPort !== undefined && gatewayPort !== 42617) {
+        // If gateway port is custom (not default), initialize Docker port with it
+        setPort(gatewayPort);
       }
 
       // 从容器中获取环境变量
@@ -501,6 +520,9 @@ export function ConfigEditor({
                 className="text-white"
                 style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
               />
+              <p className="text-xs text-muted-foreground">
+                Internal gateway port. This will be automatically synced when you set the Docker Listening Port below.
+              </p>
             </div>
 
             <div className="flex items-center justify-between">
@@ -523,9 +545,9 @@ export function ConfigEditor({
                 value={localConfig.autonomy?.level || 'supervised'}
                 onChange={(e) => updateConfig(['autonomy', 'level'], e.target.value)}
               >
-                <option value="supervised">Supervised</option>
-                <option value="moderate">Moderate</option>
-                <option value="autonomous">Autonomous</option>
+                <option value="readonly">Readonly - No actions allowed</option>
+                <option value="supervised">Supervised - Requires approval</option>
+                <option value="full">Full - Autonomous actions</option>
               </select>
             </div>
 
@@ -1391,17 +1413,18 @@ export function ConfigEditor({
                       onChange={(e) => {
                         const value = e.target.value;
                         if (value === '') {
-                          setPort(undefined);
+                          syncPortWithGateway(undefined);
                         } else {
                           const parsed = parseInt(value);
-                          setPort((parsed >= 1 && parsed <= 65535) ? parsed : undefined);
+                          syncPortWithGateway((parsed >= 1 && parsed <= 65535) ? parsed : undefined);
                         }
                       }}
                       className="text-white"
                       style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Container listening port (1-65535). Leave empty to not expose port.
+                      Container listening port (1-65535). Leave empty to not expose port externally.
+                      This will automatically sync with the Gateway port configuration.
                     </p>
                   </div>
                 </div>

@@ -112,6 +112,20 @@ export interface ZeroClawConfig {
       allowed_users?: string[];
     };
   };
+  web_search?: {
+    enabled?: boolean;
+    provider?: 'duckduckgo' | 'brave';
+    brave_api_key?: string | null;
+    max_results?: number;
+    timeout_secs?: number;
+  };
+  web_fetch?: {
+    enabled?: boolean;
+    allowed_domains?: string[];
+    blocked_domains?: string[];
+    max_response_size?: number;
+    timeout_secs?: number;
+  };
   [key: string]: any;
 }
 

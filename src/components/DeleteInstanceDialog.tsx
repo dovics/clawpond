@@ -70,13 +70,20 @@ export function DeleteInstanceDialog({
               </>
             )}
           </DialogTitle>
+          {step === 'delete' ? (
+            <DialogDescription className="text-gray-400">
+              Are you sure you want to delete the instance <span className="text-white font-semibold">"{instanceName}"</span>?
+            </DialogDescription>
+          ) : (
+            <DialogDescription className="text-gray-400">
+              Instance <span className="text-white font-semibold">"{instanceName}"</span> will be deleted.
+              Do you also want to delete the workspace folder?
+            </DialogDescription>
+          )}
         </DialogHeader>
 
         {step === 'delete' ? (
           <>
-            <DialogDescription className="text-gray-400">
-              Are you sure you want to delete the instance <span className="text-white font-semibold">"{instanceName}"</span>?
-            </DialogDescription>
             <div className="py-4">
               <div className="bg-red-900/20 border border-red-900/50 rounded-lg p-4">
                 <p className="text-sm text-red-400 flex items-start gap-2">
@@ -90,10 +97,6 @@ export function DeleteInstanceDialog({
           </>
         ) : (
           <>
-            <DialogDescription className="text-gray-400">
-              Instance <span className="text-white font-semibold">"{instanceName}"</span> will be deleted.
-              Do you also want to delete the workspace folder?
-            </DialogDescription>
             <div className="py-4 space-y-3">
               <div className="space-y-2">
                 <Label className="text-white text-sm">Workspace Deletion Option</Label>

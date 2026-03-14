@@ -54,6 +54,19 @@ auto_save = true
 [reliability]
 provider_retries = 2
 provider_backoff_ms = 500
+
+[web_search]
+enabled = false
+provider = "duckduckgo"
+max_results = 5
+timeout_secs = 15
+
+[web_fetch]
+enabled = false
+allowed_domains = ["*"]
+blocked_domains = []
+max_response_size = 500000
+timeout_secs = 30
 `;
 
 export class DockerService {
@@ -960,24 +973,65 @@ export class DockerService {
 
   /**
    * Get AGENTS.md file content for a container
+   * Reads from inside the container using docker exec
    */
   async getAgentsFile(containerId: string): Promise<string> {
     try {
-      const fs = require('fs');
-      const path = require('path');
-
       const container = docker.getContainer(containerId);
       const containerInfo = await container.inspect();
-      const containerName = containerInfo.Name.replace(/^\//, '');
 
-      const agentsFilePath = path.join(WORKSPACE_ROOT, containerName, 'workspace/AGENTS.md');
+      // Check if container is running
+      if (containerInfo.State.Status !== 'running') {
+        // If not running, try to read from host mount
+        const fs = require('fs');
+        const path = require('path');
+        const containerName = containerInfo.Name.replace(/^\//, '');
+        const agentsFilePath = path.join(WORKSPACE_ROOT, containerName, 'workspace/AGENTS.md');
 
-      if (fs.existsSync(agentsFilePath)) {
-        return fs.readFileSync(agentsFilePath, 'utf-8');
+        if (fs.existsSync(agentsFilePath)) {
+          return fs.readFileSync(agentsFilePath, 'utf-8');
+        }
+        return '';
       }
 
-      // Return empty string if file doesn't exist
-      return '';
+      // Use docker exec to read file from container
+      const exec = await container.exec({
+        Cmd: ['cat', '/zeroclaw-data/workspace/AGENTS.md'],
+        AttachStdout: true,
+        AttachStderr: true,
+      });
+
+      const stream = await exec.start({ Detach: false });
+
+      return new Promise((resolve) => {
+        let output = '';
+        let errorOutput = '';
+
+        stream.on('data', (chunk: Buffer) => {
+          output += chunk.toString('utf-8');
+        });
+
+        stream.on('error', (err: Error) => {
+          errorOutput += err.message;
+        });
+
+        stream.on('end', async () => {
+          // Check the exit code
+          try {
+            const info = await exec.inspect();
+            if (info.ExitCode === 0) {
+              resolve(output);
+            } else {
+              // File doesn't exist or error reading
+              console.log('AGENTS.md not found in container (exit code:', info.ExitCode + ')');
+              resolve('');
+            }
+          } catch (inspectError) {
+            console.error('Error inspecting exec:', inspectError);
+            resolve('');
+          }
+        });
+      });
     } catch (error) {
       console.error('Error reading AGENTS.md:', error);
       throw error;
@@ -1009,6 +1063,70 @@ export class DockerService {
     } catch (error) {
       console.error('Error writing AGENTS.md:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Create an exec instance for interactive terminal
+   */
+  async createExecInstance(containerId: string): Promise<string> {
+    try {
+      const container = docker.getContainer(containerId);
+      const exec = await container.exec({
+        Cmd: ['/bin/bash'],
+        AttachStdin: true,
+        AttachStdout: true,
+        AttachStderr: true,
+        Tty: true,
+      });
+
+      // Start the exec and return the exec ID
+      const execInfo = await exec.inspect();
+      return execInfo.ID;
+    } catch (error) {
+      console.error('Error creating exec instance:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Resize the TTY for an exec instance
+   */
+  async resizeExec(execId: string, rows: number, cols: number): Promise<void> {
+    try {
+      const exec = docker.getExec(execId);
+      await exec.resize({ h: rows, w: cols });
+    } catch (error) {
+      console.error('Error resizing exec:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Start an exec instance and return the stream
+   */
+  async startExec(execId: string): Promise<NodeJS.ReadableStream> {
+    try {
+      const exec = docker.getExec(execId);
+      const stream = await exec.start({ Detach: false, Tty: true });
+      return stream as NodeJS.ReadableStream;
+    } catch (error) {
+      console.error('Error starting exec:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the full container ID from short ID
+   */
+  async getFullContainerId(shortId: string): Promise<string | null> {
+    try {
+      const container = docker.getContainer(shortId);
+      const info = await container.inspect();
+      return info.Id;
+    } catch (error) {
+      console.error('Error getting full container ID:', error);
+      return null;
     }
   }
 

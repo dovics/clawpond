@@ -10,6 +10,7 @@ import { CreateInstanceDialog } from '@/components/CreateInstanceDialog';
 import { TemplateManagerDialog } from '@/components/TemplateManagerDialog';
 import { DeleteInstanceDialog } from '@/components/DeleteInstanceDialog';
 import { LogsViewer } from '@/components/LogsViewer';
+import { ConsoleDialog } from '@/components/ConsoleDialog';
 import { ZeroClawInstance, CreateInstanceOptions } from '@/types';
 import { List } from 'lucide-react';
 import { AuthGate } from '@/components/AuthGate';
@@ -22,6 +23,7 @@ export function DashboardContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedInstance, setSelectedInstance] = useState<ZeroClawInstance | null>(null);
   const [logsInstance, setLogsInstance] = useState<ZeroClawInstance | null>(null);
+  const [consoleInstance, setConsoleInstance] = useState<ZeroClawInstance | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
   const [templateChangeTrigger, setTemplateChangeTrigger] = useState(0);
@@ -315,6 +317,7 @@ export function DashboardContent() {
                 onDelete={handleDeleteClick}
                 onConfig={setSelectedInstance}
                 onLogs={setLogsInstance}
+                onConsole={setConsoleInstance}
               />
             ))}
           </div>
@@ -343,6 +346,14 @@ export function DashboardContent() {
           onClose={() => setLogsInstance(null)}
           containerId={logsInstance.containerId!}
           containerName={logsInstance.name}
+        />
+      )}
+
+      {consoleInstance && (
+        <ConsoleDialog
+          instance={consoleInstance}
+          open={!!consoleInstance}
+          onClose={() => setConsoleInstance(null)}
         />
       )}
 

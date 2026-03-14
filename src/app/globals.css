@@ -148,4 +148,15 @@
   .focus\:ring-2:focus { box-shadow: 0 0 0 2px hsl(var(--ring)); }
   .focus\:ring-ring:focus { box-shadow: 0 0 0 2px hsl(var(--ring)); }
   .focus\:ring-offset-2:focus { --tw-ring-offset-width: 2px; }
+
+  /* xterm.js helper textarea - make it invisible but keep it functional */
+  .xterm-helper-textarea {
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    outline: none !important;
+  }
 }
