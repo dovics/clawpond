@@ -997,7 +997,7 @@ export class DockerService {
       const containerName = containerInfo.Name.replace(/^\//, '');
 
       const workspaceDir = path.join(WORKSPACE_ROOT, containerName);
-      const agentsFilePath = path.join(workspaceDir, 'AGENTS.md');
+      const agentsFilePath = path.join(workspaceDir, 'workspace/AGENTS.md');
 
       // Ensure workspace directory exists
       if (!fs.existsSync(workspaceDir)) {

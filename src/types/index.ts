@@ -106,6 +106,11 @@ export interface ZeroClawConfig {
         allowed_sender_ids?: string[];
       };
     };
+    qq?: {
+      app_id?: string;
+      app_secret?: string;
+      allowed_users?: string[];
+    };
   };
   [key: string]: any;
 }

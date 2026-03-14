@@ -56,6 +56,7 @@ export function ConfigEditor({
   const [providerType, setProviderType] = useState('openrouter');
   const [baseUrl, setBaseUrl] = useState('');
   const [telegramEnabled, setTelegramEnabled] = useState(false);
+  const [qqEnabled, setQqEnabled] = useState(false);
   const [proxyEnabled, setProxyEnabled] = useState(false);
   const [noProxyList, setNoProxyList] = useState<string[]>([]);
   const [proxyServices, setProxyServices] = useState<string[]>([]);
@@ -101,6 +102,10 @@ export function ConfigEditor({
       // Initialize Telegram enabled state
       const telegramConfig = normalizedConfig.channels_config?.telegram;
       setTelegramEnabled(!!telegramConfig && (telegramConfig.bot_token !== undefined && telegramConfig.bot_token !== ''));
+
+      // Initialize QQ enabled state
+      const qqConfig = normalizedConfig.channels_config?.qq;
+      setQqEnabled(!!qqConfig && (qqConfig.app_id !== undefined && qqConfig.app_id !== ''));
 
       // Initialize Proxy state
       const proxyConfig = normalizedConfig.proxy;
@@ -845,6 +850,83 @@ export function ConfigEditor({
                         Comma-separated list of sender IDs that bypass mention gate (optional)
                       </p>
                     </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* QQ Channel Configuration */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                <div>
+                  <h3 className="text-white font-medium">QQ Channel</h3>
+                  <p className="text-xs text-muted-foreground">Enable QQ bot integration</p>
+                </div>
+                <Switch
+                  id="qqEnabled"
+                  checked={qqEnabled}
+                  onCheckedChange={(checked) => {
+                    setQqEnabled(checked);
+                    if (checked) {
+                      updateConfig(['channels_config', 'qq', 'app_id'], '');
+                      updateConfig(['channels_config', 'qq', 'app_secret'], '');
+                    } else {
+                      updateConfig(['channels_config', 'qq'], {});
+                    }
+                  }}
+                />
+              </div>
+
+              {qqEnabled && (
+                <div className="space-y-3 pl-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="qqAppId" className="text-white">App ID</Label>
+                    <Input
+                      id="qqAppId"
+                      type="text"
+                      value={localConfig.channels_config?.qq?.app_id || ''}
+                      onChange={(e) => updateConfig(['channels_config', 'qq', 'app_id'], e.target.value)}
+                      placeholder="Your QQ Bot App ID"
+                      className="text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Get your App ID from QQ Bot developer console
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="qqAppSecret" className="text-white">App Secret</Label>
+                    <Input
+                      id="qqAppSecret"
+                      type="password"
+                      value={localConfig.channels_config?.qq?.app_secret || ''}
+                      onChange={(e) => updateConfig(['channels_config', 'qq', 'app_secret'], e.target.value)}
+                      placeholder="Your QQ Bot App Secret"
+                      className="text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Get your App Secret from QQ Bot developer console
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="qqAllowedUsers" className="text-white">Allowed Users</Label>
+                    <Input
+                      id="qqAllowedUsers"
+                      value={localConfig.channels_config?.qq?.allowed_users?.join(', ') || ''}
+                      onChange={(e) => {
+                        const users = e.target.value.split(',').map(u => u.trim()).filter(u => u.length > 0);
+                        updateConfig(['channels_config', 'qq', 'allowed_users'], users.length > 0 ? users : []);
+                      }}
+                      placeholder="user1, user2, 123456789"
+                      className="text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Comma-separated list of user IDs. Empty = deny all, * = allow all
+                    </p>
                   </div>
                 </div>
               )}
