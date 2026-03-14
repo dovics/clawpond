@@ -428,18 +428,17 @@ export class DockerService {
   }
 
   /**
-   * Delete workspace directory for a container
+   * Delete workspace directory for a container by container name
+   * This method should be called with the container name, not ID
    */
-  async deleteWorkspace(containerId: string): Promise<boolean> {
+  async deleteWorkspace(containerName: string): Promise<boolean> {
     try {
       const fs = require('fs');
       const path = require('path');
 
-      const container = docker.getContainer(containerId);
-      const containerInfo = await container.inspect();
-      const containerName = containerInfo.Name.replace(/^\//, '');
-
-      const workspaceDir = path.join(WORKSPACE_ROOT, containerName);
+      // Remove leading slash if present
+      const cleanContainerName = containerName.replace(/^\//, '');
+      const workspaceDir = path.join(WORKSPACE_ROOT, cleanContainerName);
 
       if (fs.existsSync(workspaceDir)) {
         fs.rmSync(workspaceDir, { recursive: true, force: true });
@@ -451,6 +450,41 @@ export class DockerService {
     } catch (error) {
       console.error('Error deleting workspace:', error);
       return false;
+    }
+  }
+
+  /**
+   * Delete container and optionally its workspace
+   * This method gets container info before deleting, so workspace can be deleted after
+   */
+  async deleteContainerAndWorkspace(containerId: string, deleteWorkspaceFlag: boolean): Promise<{ success: boolean; workspaceDeleted: boolean }> {
+    try {
+      let containerName: string | undefined;
+
+      // Get container info BEFORE deleting
+      if (deleteWorkspaceFlag) {
+        try {
+          const container = docker.getContainer(containerId);
+          const containerInfo = await container.inspect();
+          containerName = containerInfo.Name;
+        } catch (error) {
+          console.warn('Could not get container info for workspace deletion:', error);
+        }
+      }
+
+      // Delete the container
+      const success = await this.deleteContainer(containerId);
+
+      // Delete workspace if requested and we got the container name
+      let workspaceDeleted = false;
+      if (deleteWorkspaceFlag && containerName && success) {
+        workspaceDeleted = await this.deleteWorkspace(containerName);
+      }
+
+      return { success, workspaceDeleted };
+    } catch (error) {
+      console.error('Error deleting container and workspace:', error);
+      return { success: false, workspaceDeleted: false };
     }
   }
 
@@ -936,7 +970,7 @@ export class DockerService {
       const containerInfo = await container.inspect();
       const containerName = containerInfo.Name.replace(/^\//, '');
 
-      const agentsFilePath = path.join(WORKSPACE_ROOT, containerName, 'AGENTS.md');
+      const agentsFilePath = path.join(WORKSPACE_ROOT, containerName, 'workspace/AGENTS.md');
 
       if (fs.existsSync(agentsFilePath)) {
         return fs.readFileSync(agentsFilePath, 'utf-8');

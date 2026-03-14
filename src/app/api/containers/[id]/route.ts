@@ -34,20 +34,14 @@ export async function DELETE(
     const body = await request.json().catch(() => ({}));
     const { deleteWorkspace: deleteWorkspaceFlag } = body;
 
-    // Delete the container
-    const success = await dockerService.deleteContainer(id);
+    // Delete container and workspace using the combined method
+    const result = await dockerService.deleteContainerAndWorkspace(id, deleteWorkspaceFlag);
 
-    // Delete workspace if requested
-    let workspaceDeleted = false;
-    if (deleteWorkspaceFlag && success) {
-      workspaceDeleted = await dockerService.deleteWorkspace(id);
-    }
-
-    return NextResponse.json({ success, workspaceDeleted });
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error deleting container:', error);
     return NextResponse.json(
-      { error: 'Failed to delete container' },
+      { error: 'Failed to delete container', success: false, workspaceDeleted: false },
       { status: 500 }
     );
   }
