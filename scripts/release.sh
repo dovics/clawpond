@@ -22,20 +22,28 @@ else
     exit 1
 fi
 
+# 获取 git hash
+GIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
+# 组合版本号
+VERSION_WITH_HASH="${VERSION}-${GIT_HASH}"
+
 # Docker Hub 特殊处理
 if [[ "$REGISTRY" == "docker.io"* ]]; then
     # 提取用户名 (docker.io/username -> username)
     DOCKERHUB_USER="${REGISTRY#docker.io/}"
-    FULL_IMAGE="${DOCKERHUB_USER}/${IMAGE_NAME}:${VERSION}"
+    FULL_IMAGE="${DOCKERHUB_USER}/${IMAGE_NAME}:${VERSION_WITH_HASH}"
     LATEST_IMAGE="${DOCKERHUB_USER}/${IMAGE_NAME}:latest"
 else
-    FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}:${VERSION}"
+    FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}:${VERSION_WITH_HASH}"
     LATEST_IMAGE="${REGISTRY}/${IMAGE_NAME}:latest"
 fi
 
 echo -e "${BLUE}=== ClawPond 发布脚本 ===${NC}"
 echo ""
 echo "版本: ${VERSION}"
+echo "Git Hash: ${GIT_HASH}"
+echo "完整版本: ${VERSION_WITH_HASH}"
 echo "仓库: ${REGISTRY}"
 echo ""
 

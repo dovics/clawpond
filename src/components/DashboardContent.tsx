@@ -106,7 +106,7 @@ export function DashboardContent() {
     }
   };
 
-  const handleConfigSave = async (config: any, resourceLimits?: { memoryLimit?: number; cpuLimit?: number }) => {
+  const handleConfigSave = async (config: any, resourceLimits?: { memoryLimit?: number; cpuLimit?: number; port?: number }) => {
     if (!selectedInstance?.containerId) return;
 
     try {
@@ -120,15 +120,16 @@ export function DashboardContent() {
       // Get the new container ID (may be different if container was recreated)
       const { containerId: newContainerId } = await response.json();
 
-      // Then, update resource limits if they changed
-      // Only call the API if limits are actually different
+      // Check if any resource limits or port changed
       const memoryChanged = resourceLimits?.memoryLimit !== undefined &&
                           resourceLimits.memoryLimit !== selectedInstance.memoryLimit;
       const cpuChanged = resourceLimits?.cpuLimit !== undefined &&
                         resourceLimits.cpuLimit !== selectedInstance.cpuLimit;
+      const portChanged = resourceLimits?.port !== undefined &&
+                         resourceLimits.port !== selectedInstance.port;
 
-      if (memoryChanged || cpuChanged) {
-        console.log(`Resource limits changed - Memory: ${selectedInstance.memoryLimit} -> ${resourceLimits?.memoryLimit}, CPU: ${selectedInstance.cpuLimit} -> ${resourceLimits?.cpuLimit}`);
+      if (memoryChanged || cpuChanged || portChanged) {
+        console.log(`Resource settings changed - Memory: ${selectedInstance.memoryLimit} -> ${resourceLimits?.memoryLimit}, CPU: ${selectedInstance.cpuLimit} -> ${resourceLimits?.cpuLimit}, Port: ${selectedInstance.port} -> ${resourceLimits?.port}`);
         // Use the new container ID for resource limits update
         const limitsResponse = await api.put(`/api/containers/${newContainerId}/limits`, resourceLimits);
 
@@ -332,6 +333,7 @@ export function DashboardContent() {
           containerId={selectedInstance.containerId!}
           memoryLimit={selectedInstance.memoryLimit}
           cpuLimit={selectedInstance.cpuLimit}
+          port={selectedInstance.port}
         />
       )}
 

@@ -27,13 +27,14 @@ interface EnvVar {
 interface ConfigEditorProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (config: ZeroClawConfig, resourceLimits?: { memoryLimit?: number; cpuLimit?: number }) => void;
+  onSave: (config: ZeroClawConfig, resourceLimits?: { memoryLimit?: number; cpuLimit?: number; port?: number }) => void;
   onTemplatesChange?: () => void;
   config: ZeroClawConfig;
   instanceName: string;
   containerId: string;
   memoryLimit?: number;
   cpuLimit?: number;
+  port?: number;
 }
 
 export function ConfigEditor({
@@ -46,6 +47,7 @@ export function ConfigEditor({
   containerId,
   memoryLimit: initialMemoryLimit,
   cpuLimit: initialCpuLimit,
+  port: initialPort,
 }: ConfigEditorProps) {
   const { toast } = useToast();
   const [localConfig, setLocalConfig] = useState<ZeroClawConfig>(config);
@@ -57,12 +59,18 @@ export function ConfigEditor({
   const [proxyEnabled, setProxyEnabled] = useState(false);
   const [noProxyList, setNoProxyList] = useState<string[]>([]);
   const [proxyServices, setProxyServices] = useState<string[]>([]);
+  const [allowedCommands, setAllowedCommands] = useState<string[]>([]);
+  const [forbiddenPaths, setForbiddenPaths] = useState<string[]>([]);
   const [memoryLimit, setMemoryLimit] = useState(initialMemoryLimit || 500);
   const [cpuLimit, setCpuLimit] = useState(initialCpuLimit || 0.5);
+  const [port, setPort] = useState(initialPort);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [agentsContent, setAgentsContent] = useState('');
+  const [loadingAgents, setLoadingAgents] = useState(false);
+  const [savingAgents, setSavingAgents] = useState(false);
 
   useEffect(() => {
     const loadConfigAndEnv = async () => {
@@ -99,6 +107,11 @@ export function ConfigEditor({
       setProxyEnabled(proxyConfig?.enabled || false);
       setNoProxyList(proxyConfig?.no_proxy || []);
       setProxyServices(proxyConfig?.services || []);
+
+      // Initialize Autonomy security lists
+      const autonomyConfig = normalizedConfig.autonomy;
+      setAllowedCommands(autonomyConfig?.allowed_commands || []);
+      setForbiddenPaths(autonomyConfig?.forbidden_paths || []);
 
       setLocalConfig(normalizedConfig);
       try {
@@ -184,6 +197,48 @@ export function ConfigEditor({
     loadConfigAndEnv();
   }, [config, isOpen, containerId]);
 
+  const loadAgentsContent = async () => {
+    setLoadingAgents(true);
+    try {
+      const response = await api.get(`/api/containers/${containerId}/agents`);
+      if (response.ok) {
+        const data = await response.json();
+        setAgentsContent(data.content || '');
+      }
+    } catch (error) {
+      console.error('Error loading AGENTS.md:', error);
+    } finally {
+      setLoadingAgents(false);
+    }
+  };
+
+  const saveAgentsContent = async () => {
+    setSavingAgents(true);
+    try {
+      const response = await api.put(`/api/containers/${containerId}/agents`, {
+        content: agentsContent
+      });
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "AGENTS.md saved successfully!",
+          variant: "success",
+        });
+      } else {
+        throw new Error('Failed to save AGENTS.md');
+      }
+    } catch (error) {
+      console.error('Error saving AGENTS.md:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save AGENTS.md",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingAgents(false);
+    }
+  };
+
   const updateConfig = (path: string[], value: any) => {
     const newConfig = { ...localConfig };
     let current: any = newConfig;
@@ -241,7 +296,9 @@ export function ConfigEditor({
     const finalCpuLimit = isNaN(cpuLimit)
       ? (initialCpuLimit || 0.5)
       : Math.max(0.1, cpuLimit); // Minimum 0.1 cores
-    onSave(localConfig, { memoryLimit: finalMemoryLimit, cpuLimit: finalCpuLimit });
+    // Validate port if provided
+    const finalPort = port !== undefined && !isNaN(port) && port >= 1 && port <= 65535 ? port : undefined;
+    onSave(localConfig, { memoryLimit: finalMemoryLimit, cpuLimit: finalCpuLimit, port: finalPort });
     onClose();
   };
 
@@ -330,12 +387,13 @@ export function ConfigEditor({
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-5" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
+          <TabsList className="grid w-full grid-cols-6" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
             <TabsTrigger value="general" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">General</TabsTrigger>
             <TabsTrigger value="autonomy" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Autonomy</TabsTrigger>
             <TabsTrigger value="channels" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Channels</TabsTrigger>
             <TabsTrigger value="security" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Security</TabsTrigger>
             <TabsTrigger value="advanced" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Advanced</TabsTrigger>
+            <TabsTrigger value="agents" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Agents</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4 mt-4">
@@ -515,6 +573,108 @@ export function ConfigEditor({
                 checked={localConfig.autonomy?.block_high_risk_commands !== false}
                 onCheckedChange={(checked) => updateConfig(['autonomy', 'block_high_risk_commands'], checked)}
               />
+            </div>
+
+            <div className="mt-6 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-white">Allowed Commands</Label>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    const newList = [...allowedCommands, ''];
+                    setAllowedCommands(newList);
+                    updateConfig(['autonomy', 'allowed_commands'], newList);
+                  }}
+                  className="text-xs px-2 py-1"
+                  style={{ backgroundColor: 'rgba(255, 59, 48, 0.8)', color: 'white' }}
+                >
+                  + Add Command
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {allowedCommands.map((command, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <Input
+                      placeholder="e.g., git, npm, python3"
+                      value={command}
+                      onChange={(e) => {
+                        const newList = [...allowedCommands];
+                        newList[index] = e.target.value;
+                        setAllowedCommands(newList);
+                        updateConfig(['autonomy', 'allowed_commands'], newList);
+                      }}
+                      className="text-white flex-1"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        const newList = allowedCommands.filter((_, i) => i !== index);
+                        setAllowedCommands(newList);
+                        updateConfig(['autonomy', 'allowed_commands'], newList);
+                      }}
+                      variant="outline"
+                      className="px-2 py-1 text-red-400 border-red-900 hover:bg-red-950"
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Commands that the agent is allowed to execute. Leave empty to allow all commands.
+              </p>
+            </div>
+
+            <div className="mt-6 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-white">Forbidden Paths</Label>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    const newList = [...forbiddenPaths, ''];
+                    setForbiddenPaths(newList);
+                    updateConfig(['autonomy', 'forbidden_paths'], newList);
+                  }}
+                  className="text-xs px-2 py-1"
+                  style={{ backgroundColor: 'rgba(255, 59, 48, 0.8)', color: 'white' }}
+                >
+                  + Add Path
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {forbiddenPaths.map((path, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <Input
+                      placeholder="e.g., /etc, /root, ~/.ssh"
+                      value={path}
+                      onChange={(e) => {
+                        const newList = [...forbiddenPaths];
+                        newList[index] = e.target.value;
+                        setForbiddenPaths(newList);
+                        updateConfig(['autonomy', 'forbidden_paths'], newList);
+                      }}
+                      className="text-white flex-1"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        const newList = forbiddenPaths.filter((_, i) => i !== index);
+                        setForbiddenPaths(newList);
+                        updateConfig(['autonomy', 'forbidden_paths'], newList);
+                      }}
+                      variant="outline"
+                      className="px-2 py-1 text-red-400 border-red-900 hover:bg-red-950"
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Paths that the agent is forbidden from accessing. The agent cannot read, write, or execute in these paths.
+              </p>
             </div>
           </TabsContent>
 
@@ -1083,12 +1243,12 @@ export function ConfigEditor({
 
             <div className="mt-6 space-y-4">
               <div className="p-3 rounded-md" style={{ backgroundColor: 'rgba(255, 59, 48, 0.1)', border: '1px solid rgba(255, 59, 48, 0.3)' }}>
-                <Label className="text-white font-semibold">Docker Resource Limits</Label>
+                <Label className="text-white font-semibold">Docker Resource Limits & Port</Label>
                 <p className="text-xs mt-1 text-muted-foreground">
-                  Configure CPU and memory limits for the container. Minimum values: CPU 0.1 cores, Memory 50MB. Requires container restart to apply.
+                  Configure CPU, memory limits and listening port for the container. Minimum values: CPU 0.1 cores, Memory 50MB. Requires container recreation to apply port changes.
                 </p>
 
-                <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="grid grid-cols-3 gap-4 mt-4">
                   <div className="space-y-2">
                     <Label htmlFor="dockerMemory" className="text-white">Memory Limit (MB)</Label>
                     <Input
@@ -1136,6 +1296,32 @@ export function ConfigEditor({
                       CPU cores, supports decimals (min: 0.1, recommended: 0.25-16)
                     </p>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="dockerPort" className="text-white">Listening Port</Label>
+                    <Input
+                      id="dockerPort"
+                      type="number"
+                      step="1"
+                      min="1"
+                      max="65535"
+                      value={port === undefined ? '' : port}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setPort(undefined);
+                        } else {
+                          const parsed = parseInt(value);
+                          setPort((parsed >= 1 && parsed <= 65535) ? parsed : undefined);
+                        }
+                      }}
+                      className="text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Container listening port (1-65535). Leave empty to not expose port.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1161,6 +1347,89 @@ export function ConfigEditor({
               >
                 {tomlPreview}
               </pre>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="agents" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-white">AGENTS.md Configuration</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Define agents available in this instance. The file is stored in the instance workspace.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  onClick={saveAgentsContent}
+                  disabled={savingAgents || loadingAgents}
+                  className="text-xs px-3 py-1"
+                  style={{ backgroundColor: 'rgba(255, 59, 48, 0.8)', color: 'white' }}
+                >
+                  {savingAgents ? 'Saving...' : 'Save AGENTS.md'}
+                </Button>
+              </div>
+              {loadingAgents ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="text-gray-400">Loading AGENTS.md...</div>
+                </div>
+              ) : (
+                <textarea
+                  value={agentsContent}
+                  onChange={(e) => setAgentsContent(e.target.value)}
+                  className="w-full h-[600px] p-4 rounded-md text-sm font-mono"
+                  style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                    color: '#e0e0e0',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    resize: 'vertical',
+                    minHeight: '600px',
+                  }}
+                  placeholder="# Agents Configuration
+
+This file defines the agents available in this instance.
+
+## Agent Definition
+
+You can define agents using the following format:
+
+\`\`\`yaml
+agents:
+  - name: agent-name
+    description: Agent description
+    model: model-name
+    temperature: 0.7
+    system_prompt: |
+      Your system prompt here
+\`\`\`
+
+## Examples
+
+\`\`\`yaml
+agents:
+  - name: coder
+    description: Code writing assistant
+    model: anthropic/claude-sonnet-4.6
+    temperature: 0.3
+    system_prompt: |
+      You are an expert programmer. Write clean, efficient code.
+
+  - name: writer
+    description: Creative writing assistant
+    model: anthropic/claude-sonnet-4.6
+    temperature: 0.9
+    system_prompt: |
+      You are a creative writer. Craft engaging stories and content.
+\`\`\`
+"
+                />
+              )}
+              <div className="mt-2 p-3 rounded-md" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                <p className="text-xs text-blue-300">
+                  <strong>Note:</strong> AGENTS.md is stored in the instance workspace directory ({instanceName}/AGENTS.md).
+                  Changes are saved immediately when you click the "Save AGENTS.md" button.
+                </p>
+              </div>
             </div>
           </TabsContent>
         </Tabs>

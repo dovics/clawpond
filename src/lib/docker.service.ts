@@ -1,5 +1,6 @@
 import Docker from 'dockerode';
 import { ContainerStats, ZeroClawInstance, CreateInstanceOptions } from '@/types';
+import { getZeroClawImage } from '@/lib/config';
 import * as TOML from '@iarna/toml';
 import path from 'path';
 
@@ -274,7 +275,7 @@ export class DockerService {
       // Build container config
       const containerConfig: any = {
         name: `openclaw-${options.name.toLowerCase().replace(/[^a-z0-9_.-]/g, '-')}`,
-        Image: 'ghcr.io/zeroclaw-labs/zeroclaw:latest',
+        Image: getZeroClawImage(),
         Cmd: ['daemon'],
         User: `${uid}:${gid}`,
         Env: env,
@@ -306,7 +307,7 @@ export class DockerService {
       }
 
       // Pull image if not exists
-      await this.pullImage('ghcr.io/zeroclaw-labs/zeroclaw:latest');
+      await this.pullImage(getZeroClawImage());
 
       const container = await docker.createContainer(containerConfig);
       await container.start();
@@ -627,12 +628,13 @@ export class DockerService {
   }
 
   /**
-   * Update container resource limits
+   * Update container resource limits and port
    */
   async updateResourceLimits(
     containerId: string,
     memoryLimitMB?: number,
-    cpuLimitCores?: number
+    cpuLimitCores?: number,
+    port?: number
   ): Promise<boolean> {
     try {
       const container = docker.getContainer(containerId);
@@ -642,6 +644,7 @@ export class DockerService {
       // Get current limits from labels
       const currentMemoryLimit = labels['openclaw.memoryLimit'] ? parseInt(labels['openclaw.memoryLimit']) : undefined;
       const currentCpuLimit = labels['openclaw.cpuLimit'] ? parseFloat(labels['openclaw.cpuLimit']) : undefined;
+      const currentPort = labels['openclaw.port'] ? parseInt(labels['openclaw.port']) : undefined;
 
       // Get current limits from HostConfig for comparison
       const currentMemoryBytes = containerInfo.HostConfig.Memory;
@@ -650,6 +653,7 @@ export class DockerService {
       // Calculate new limits
       const newMemoryMB = memoryLimitMB !== undefined ? memoryLimitMB : currentMemoryLimit;
       const newCpuCores = cpuLimitCores !== undefined ? cpuLimitCores : currentCpuLimit;
+      const newPort = port !== undefined ? port : currentPort;
 
       // Check if limits actually changed
       const memoryChanged = newMemoryMB !== undefined && currentMemoryBytes !== undefined &&
@@ -658,12 +662,14 @@ export class DockerService {
       const cpuChanged = newCpuCores !== undefined && currentCpuNanos !== undefined &&
         Math.abs(currentCpuNanos - (newCpuCores * 1000000000)) > 1000000; // Allow 0.001 CPU tolerance
 
-      if (!memoryChanged && !cpuChanged) {
-        console.log('Resource limits unchanged, skipping container recreation');
+      const portChanged = newPort !== undefined && newPort !== currentPort;
+
+      if (!memoryChanged && !cpuChanged && !portChanged) {
+        console.log('Resource limits and port unchanged, skipping container recreation');
         return true;
       }
 
-      console.log(`Resource limits changed - Memory: ${currentMemoryLimit}MB -> ${newMemoryMB}MB, CPU: ${currentCpuLimit} -> ${newCpuCores} cores`);
+      console.log(`Resource settings changed - Memory: ${currentMemoryLimit}MB -> ${newMemoryMB}MB, CPU: ${currentCpuLimit} -> ${newCpuCores} cores, Port: ${currentPort} -> ${newPort}`);
 
       const newLimits: any = {};
 
@@ -683,6 +689,12 @@ export class DockerService {
       if (newCpuCores !== undefined) {
         newLabels['openclaw.cpuLimit'] = newCpuCores.toString();
       }
+      if (newPort !== undefined) {
+        newLabels['openclaw.port'] = newPort.toString();
+      } else if (port === undefined && currentPort !== undefined) {
+        // Port was explicitly set to undefined (remove port binding)
+        delete newLabels['openclaw.port'];
+      }
 
       // Docker doesn't support updating resource limits on running containers
       // We need to recreate the container
@@ -695,17 +707,34 @@ export class DockerService {
       await container.stop({ t: 10 });
       await container.remove();
 
-      // Create new container with updated limits
+      // Prepare ExposedPorts and PortBindings based on new port setting
+      let newExposedPorts: any = undefined;
+      let newPortBindings: any = undefined;
+
+      if (newPort !== undefined) {
+        // Set up port binding
+        const portKey = `${newPort}/tcp`;
+        newExposedPorts = {
+          [portKey]: {}
+        };
+        newPortBindings = {
+          [portKey]: [{ HostPort: newPort.toString() }]
+        };
+      }
+      // If newPort is undefined, don't expose any ports (leave both undefined)
+
+      // Create new container with updated limits and port configuration
       const newContainerConfig = {
         name: containerName,
         Image: containerInfo.Config.Image,
         Cmd: containerInfo.Config.Cmd,
         User: containerInfo.Config.User,
         Env: containerInfo.Config.Env,
-        ExposedPorts: containerInfo.Config.ExposedPorts,
+        ExposedPorts: newExposedPorts,
         HostConfig: {
-          ...containerInfo.HostConfig,
           Binds: [`${mountConfigDir}:/zeroclaw-data`],
+          RestartPolicy: containerInfo.HostConfig.RestartPolicy,
+          PortBindings: newPortBindings,
           ...newLimits,
         },
         Labels: newLabels,
@@ -894,6 +923,62 @@ export class DockerService {
       throw error;
     }
   }
+
+  /**
+   * Get AGENTS.md file content for a container
+   */
+  async getAgentsFile(containerId: string): Promise<string> {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+
+      const container = docker.getContainer(containerId);
+      const containerInfo = await container.inspect();
+      const containerName = containerInfo.Name.replace(/^\//, '');
+
+      const agentsFilePath = path.join(WORKSPACE_ROOT, containerName, 'AGENTS.md');
+
+      if (fs.existsSync(agentsFilePath)) {
+        return fs.readFileSync(agentsFilePath, 'utf-8');
+      }
+
+      // Return empty string if file doesn't exist
+      return '';
+    } catch (error) {
+      console.error('Error reading AGENTS.md:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Save AGENTS.md file content for a container
+   */
+  async saveAgentsFile(containerId: string, content: string): Promise<void> {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+
+      const container = docker.getContainer(containerId);
+      const containerInfo = await container.inspect();
+      const containerName = containerInfo.Name.replace(/^\//, '');
+
+      const workspaceDir = path.join(WORKSPACE_ROOT, containerName);
+      const agentsFilePath = path.join(workspaceDir, 'AGENTS.md');
+
+      // Ensure workspace directory exists
+      if (!fs.existsSync(workspaceDir)) {
+        fs.mkdirSync(workspaceDir, { recursive: true });
+      }
+
+      // Write AGENTS.md file
+      fs.writeFileSync(agentsFilePath, content, 'utf-8');
+    } catch (error) {
+      console.error('Error writing AGENTS.md:', error);
+      throw error;
+    }
+  }
+
 }
+
 
 export const dockerService = new DockerService();

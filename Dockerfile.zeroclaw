@@ -1,0 +1,88 @@
+# ZeroClaw 自定义镜像
+# 使用本地下载的 ZeroClaw 二进制文件构建
+#
+# 使用方式:
+#   1. 先运行: bash scripts/download-zeroclaw.sh [版本]
+#   2. 再运行: bash scripts/build-zeroclaw.sh [版本]
+
+FROM ubuntu:24.04
+
+# 设置环境变量（与官方 ZeroClaw 镜像保持一致）
+ENV LANG=C.UTF-8 \
+    ZEROCLAW_WORKSPACE=/zeroclaw-data/workspace \
+    HOME=/zeroclaw-data \
+    ZEROCLAW_GATEWAY_PORT=42617
+
+# 安装 Node.js 20 和必要的工具
+RUN sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/ubuntu.sources && \
+    sed -i 's/security.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/ubuntu.sources && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl wget xz-utils && \
+    # 下载并安装 Node.js 20
+    NODE_VERSION="20.18.2" && \
+    cd /usr/local && \
+    curl -fsSLO https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz && \
+    tar -xJf node-v${NODE_VERSION}-linux-x64.tar.xz && \
+    ln -s /usr/local/node-v${NODE_VERSION}-linux-x64 /usr/local/node && \
+    rm node-v${NODE_VERSION}-linux-x64.tar.xz && \
+    # 添加 Node.js 到 PATH
+    export PATH="/usr/local/node/bin:$PATH" && \
+    ln -s /usr/local/node/bin/node /usr/local/bin/node && \
+    ln -s /usr/local/node/bin/npm /usr/local/bin/npm && \
+    ln -s /usr/local/node/bin/npx /usr/local/bin/npx && \
+    # 安装其他工具
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    g++ \
+    make \
+    cmake \
+    git \
+    vim \
+    nano \
+    unzip \
+    zip \
+    procps \
+    htop \
+    lsof \
+    iptables \
+    iputils-ping \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# 验证安装
+RUN node --version && \
+    npm --version && \
+    npx --version && \
+    git --version && \
+    curl --version
+
+# 创建 zeroclaw 用户和组（使用不常见的 UID 避免冲突）
+RUN groupadd -g 2000 zeroclaw && \
+    useradd -u 2000 -g zeroclaw -d ${HOME} -s /bin/bash -m zeroclaw && \
+    mkdir -p ${ZEROCLAW_WORKSPACE} && \
+    mkdir -p ${HOME} && \
+    chown -R zeroclaw:zeroclaw ${HOME}
+
+# 复制本地下载的 ZeroClaw 二进制文件
+COPY build/zeroclaw/zeroclaw /usr/local/bin/zeroclaw
+RUN chmod +x /usr/local/bin/zeroclaw
+
+# 验证 ZeroClaw 安装
+RUN zeroclaw --version
+
+# 设置工作目录
+WORKDIR ${HOME}
+
+# 切换到非 root 用户
+USER zeroclaw
+
+# 暴露 ZeroClaw gateway 端口
+EXPOSE 42617
+
+# 设置 entrypoint 来运行 zeroclaw
+ENTRYPOINT ["zeroclaw"]
+
+# 默认命令
+CMD ["gateway"]

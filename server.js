@@ -25,8 +25,31 @@ if (!process.env.AUTH_TOKEN) {
   console.log('Using existing AUTH_TOKEN from environment: ', process.env.AUTH_TOKEN);
 }
 
-// Start the Next.js standalone server
-console.log('Starting Next.js standalone server...');
+// Get the mode from command line arguments
+const mode = process.argv[2] || 'start';
 
-// Import and start the standalone server
-require('./server.js');
+if (mode === 'dev') {
+  // Development mode: use next dev
+  console.log('Starting Next.js in development mode...');
+  const nextBin = path.join(__dirname, 'node_modules', '.bin', 'next');
+  const devProcess = spawn('node', [nextBin, 'dev'], {
+    stdio: 'inherit',
+    env: { ...process.env }
+  });
+
+  devProcess.on('exit', (code) => {
+    process.exit(code);
+  });
+} else {
+  // Production mode: use standalone server
+  console.log('Starting Next.js standalone server...');
+
+  try {
+    // Try to require the standalone server
+    require('./.next/standalone/server.js');
+  } catch (err) {
+    console.error('Standalone server not found. Please run: npm run build');
+    console.error('Or use development mode: npm run dev');
+    process.exit(1);
+  }
+}

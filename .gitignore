@@ -47,3 +47,5 @@ workspace
 .vscode
 /templates/
 .claude
+build/zeroclaw/*.tar.gz
+!build/zeroclaw/zeroclaw

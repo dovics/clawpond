@@ -18,3 +18,11 @@ export function buildInstanceUrl(port: number): string {
   const host = getServerHost();
   return `http://${host}:${port}`;
 }
+
+/**
+ * Get the ZeroClaw container image to use.
+ * Uses ZEROCLAW_IMAGE environment variable if set, otherwise falls back to default.
+ */
+export function getZeroClawImage(): string {
+  return process.env.ZEROCLAW_IMAGE || 'dovics1/zeroclaw:v0.1.7-beta.30-local-0.1.3-fea53a8';
+}
