@@ -4,6 +4,15 @@ import { getZeroClawImage } from '@/lib/config';
 import * as TOML from '@iarna/toml';
 import path from 'path';
 
+// Interface for ZeroClaw config structure
+interface ZeroClawConfig {
+  gateway?: {
+    paired_tokens?: string[];
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
 // 宿主机上的工作目录固定为当前目录下的 workspace 文件夹
