@@ -216,11 +216,15 @@ export function DashboardContent() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-              <span className="text-primary text-2xl">›</span>
-              ClawPond
+            <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+              <img
+                src="/logo.png"
+                alt="ClawPond Logo"
+                className="w-10 h-10"
+              />
+              <span>ClawPond</span>
             </h1>
-            <p className="text-gray-400 mt-1">
+            <p className="text-gray-400 mt-1 ml-14">
               AI Agent Instance Management Dashboard
             </p>
           </div>

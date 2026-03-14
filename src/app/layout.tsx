@@ -4,6 +4,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "ClawPond",
   description: "AI Agent Instance Management Dashboard",
+  icons: {
+    icon: "/logo-32x32.png",
+    apple: "/logo-64x64.png",
+  },
 };
 
 export default function RootLayout({
