@@ -411,12 +411,13 @@ export function ConfigEditor({
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-5" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
+          <TabsList className="grid w-full grid-cols-6" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
             <TabsTrigger value="general" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">General</TabsTrigger>
             <TabsTrigger value="model" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Model</TabsTrigger>
             <TabsTrigger value="autonomy" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Autonomy</TabsTrigger>
             <TabsTrigger value="channels" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Channels</TabsTrigger>
             <TabsTrigger value="agents" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Agents</TabsTrigger>
+            <TabsTrigger value="advanced" className="data-[state=active]:text-white data-[state=active]:bg-transparent text-muted-foreground">Advanced</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4 mt-4">
@@ -562,92 +563,183 @@ export function ConfigEditor({
               </div>
             </div>
 
-            {/* Docker Resource Limits */}
-            <div className="mt-6 space-y-4">
-              <div className="p-3 rounded-md" style={{ backgroundColor: 'rgba(255, 59, 48, 0.1)', border: '1px solid rgba(255, 59, 48, 0.3)' }}>
-                <Label className="text-white font-semibold">Docker Resource Limits & Port</Label>
-                <p className="text-xs mt-1 text-muted-foreground">
-                  Configure CPU, memory limits and listening port for the container. Minimum values: CPU 0.1 cores, Memory 50MB. Requires container recreation to apply port changes.
-                </p>
+            {/* Web Search Configuration */}
+            <div className="mt-6 space-y-4 pt-4 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+              <h3 className="text-white font-medium">Web Search Configuration</h3>
 
-                <div className="grid grid-cols-3 gap-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="dockerMemory" className="text-white">Memory Limit (MB)</Label>
-                    <Input
-                      id="dockerMemory"
-                      type="number"
-                      step="1"
-                      value={isNaN(memoryLimit) ? '' : memoryLimit}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          setMemoryLimit(NaN);
-                        } else {
-                          const parsed = parseInt(value);
-                          setMemoryLimit(isNaN(parsed) ? NaN : parsed);
-                        }
-                      }}
-                      className="text-white"
-                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Memory limit in megabytes (min: 50MB, recommended: 256-16384)
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="dockerCpu" className="text-white">CPU Limit (cores)</Label>
-                    <Input
-                      id="dockerCpu"
-                      type="number"
-                      step="0.01"
-                      value={isNaN(cpuLimit) ? '' : cpuLimit}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          setCpuLimit(NaN);
-                        } else {
-                          const parsed = parseFloat(value);
-                          setCpuLimit(isNaN(parsed) ? NaN : parsed);
-                        }
-                      }}
-                      className="text-white"
-                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      CPU cores, supports decimals (min: 0.1, recommended: 0.25-16)
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="dockerPort" className="text-white">Listening Port</Label>
-                    <Input
-                      id="dockerPort"
-                      type="number"
-                      step="1"
-                      min="1"
-                      max="65535"
-                      value={port === undefined ? '' : port}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          syncPortWithGateway(undefined);
-                        } else {
-                          const parsed = parseInt(value);
-                          syncPortWithGateway((parsed >= 1 && parsed <= 65535) ? parsed : undefined);
-                        }
-                      }}
-                      className="text-white"
-                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Container listening port (1-65535). Leave empty to not expose port externally.
-                      This will automatically sync with the Gateway port configuration.
-                    </p>
-                  </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="webSearchEnabled" className="text-white">Enable Web Search</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Allow agents to search the web for information
+                  </p>
                 </div>
+                <Switch
+                  id="webSearchEnabled"
+                  checked={localConfig.web_search?.enabled !== false}
+                  onCheckedChange={(checked) => updateConfig(['web_search', 'enabled'], checked)}
+                />
               </div>
+
+              {localConfig.web_search?.enabled !== false && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="webSearchProvider" className="text-white">Provider</Label>
+                    <select
+                      id="webSearchProvider"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                      value={localConfig.web_search?.provider || 'duckduckgo'}
+                      onChange={(e) => updateConfig(['web_search', 'provider'], e.target.value)}
+                    >
+                      <option value="duckduckgo">DuckDuckGo</option>
+                      <option value="brave">Brave Search</option>
+                    </select>
+                  </div>
+
+                  {localConfig.web_search?.provider === 'brave' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="braveApiKey" className="text-white">Brave API Key</Label>
+                      <Input
+                        id="braveApiKey"
+                        type="password"
+                        value={localConfig.web_search?.brave_api_key || ''}
+                        onChange={(e) => updateConfig(['web_search', 'brave_api_key'], e.target.value || null)}
+                        className="text-white"
+                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                        placeholder="Enter your Brave Search API key"
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="webSearchMaxResults" className="text-white">Max Results</Label>
+                    <Input
+                      id="webSearchMaxResults"
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={localConfig.web_search?.max_results || 10}
+                      onChange={(e) => updateConfig(['web_search', 'max_results'], parseInt(e.target.value))}
+                      className="text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="webSearchTimeout" className="text-white">Timeout (seconds)</Label>
+                    <Input
+                      id="webSearchTimeout"
+                      type="number"
+                      min="1"
+                      max="120"
+                      value={localConfig.web_search?.timeout_secs || 30}
+                      onChange={(e) => updateConfig(['web_search', 'timeout_secs'], parseInt(e.target.value))}
+                      className="text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                    />
+                  </div>
+                </>
+              )}
             </div>
+
+            {/* Web Fetch Configuration */}
+            <div className="mt-6 space-y-4 pt-4 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+              <h3 className="text-white font-medium">Web Fetch Configuration</h3>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="webFetchEnabled" className="text-white">Enable Web Fetch</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Allow agents to fetch and read web pages
+                  </p>
+                </div>
+                <Switch
+                  id="webFetchEnabled"
+                  checked={localConfig.web_fetch?.enabled !== false}
+                  onCheckedChange={(checked) => updateConfig(['web_fetch', 'enabled'], checked)}
+                />
+              </div>
+
+              {localConfig.web_fetch?.enabled !== false && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="webFetchMaxSize" className="text-white">Max Response Size (bytes)</Label>
+                    <Input
+                      id="webFetchMaxSize"
+                      type="number"
+                      min="1024"
+                      max="10485760"
+                      step="1024"
+                      value={localConfig.web_fetch?.max_response_size || 1048576}
+                      onChange={(e) => updateConfig(['web_fetch', 'max_response_size'], parseInt(e.target.value))}
+                      className="text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Maximum size of web page content to fetch (default: 1MB)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="webFetchTimeout" className="text-white">Timeout (seconds)</Label>
+                    <Input
+                      id="webFetchTimeout"
+                      type="number"
+                      min="1"
+                      max="120"
+                      value={localConfig.web_fetch?.timeout_secs || 30}
+                      onChange={(e) => updateConfig(['web_fetch', 'timeout_secs'], parseInt(e.target.value))}
+                      className="text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-white">Allowed Domains</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Restrict fetching to specific domains (optional, one per line)
+                        </p>
+                      </div>
+                    </div>
+                    <textarea
+                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                      value={(localConfig.web_fetch?.allowed_domains || []).join('\n')}
+                      onChange={(e) => {
+                        const domains = e.target.value.split('\n').map(d => d.trim()).filter(d => d);
+                        updateConfig(['web_fetch', 'allowed_domains'], domains.length > 0 ? domains : undefined);
+                      }}
+                      placeholder="example.com&#10;api.example.com"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-white">Blocked Domains</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Block specific domains from being fetched (optional, one per line)
+                        </p>
+                      </div>
+                    </div>
+                    <textarea
+                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-white"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                      value={(localConfig.web_fetch?.blocked_domains || []).join('\n')}
+                      onChange={(e) => {
+                        const domains = e.target.value.split('\n').map(d => d.trim()).filter(d => d);
+                        updateConfig(['web_fetch', 'blocked_domains'], domains.length > 0 ? domains : undefined);
+                      }}
+                      placeholder="ads.com&#10;tracker.example.com"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
           </TabsContent>
 
           <TabsContent value="model" className="space-y-4 mt-4">
@@ -1447,6 +1539,7 @@ export function ConfigEditor({
                 </>
               )}
             </div>
+
 
             <div className="mt-6 space-y-2">
               <div className="flex items-center justify-between">
