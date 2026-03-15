@@ -1,3 +1,7 @@
+/**
+ * @deprecated Use the new config editor page at /app/instances/[id]/config/page.tsx instead.
+ * This component will be removed in a future version.
+ */
 'use client';
 
 import { useState, useEffect } from 'react';

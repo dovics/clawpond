@@ -6,8 +6,9 @@ import { requireAuth } from '@/lib/auth-middleware';
 declare global {
   var activeTerminalSessions: Map<string, {
     execId: string;
-    stream: NodeJS.ReadWriteStream;
+    stream: any;
     containerId: string;
+    exec: any;
   }>;
 }
 

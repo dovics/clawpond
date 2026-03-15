@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ToasterProvider } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: "ClawPond",
@@ -22,7 +23,9 @@ export default function RootLayout({
         <meta name="darkreader-lock" />
       </head>
       <body className="antialiased">
-        {children}
+        <ToasterProvider>
+          {children}
+        </ToasterProvider>
       </body>
     </html>
   );

@@ -5,7 +5,6 @@ import { Plus, RefreshCw, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { InstanceCard } from '@/components/InstanceCard';
-import { ConfigEditor } from '@/components/ConfigEditor';
 import { CreateInstanceDialog } from '@/components/CreateInstanceDialog';
 import { TemplateManagerDialog } from '@/components/TemplateManagerDialog';
 import { DeleteInstanceDialog } from '@/components/DeleteInstanceDialog';
@@ -21,7 +20,6 @@ export function DashboardContent() {
   const { toast } = useToast();
   const [instances, setInstances] = useState<ZeroClawInstance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedInstance, setSelectedInstance] = useState<ZeroClawInstance | null>(null);
   const [logsInstance, setLogsInstance] = useState<ZeroClawInstance | null>(null);
   const [consoleInstance, setConsoleInstance] = useState<ZeroClawInstance | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -105,57 +103,6 @@ export function DashboardContent() {
       throw error;
     } finally {
       setDeletingInstance(null);
-    }
-  };
-
-  const handleConfigSave = async (config: any, resourceLimits?: { memoryLimit?: number; cpuLimit?: number; port?: number }) => {
-    if (!selectedInstance?.containerId) return;
-
-    try {
-      // First, update the config file
-      const response = await api.put(`/api/containers/${selectedInstance.containerId}/config`, config);
-
-      if (!response.ok) {
-        throw new Error('Failed to update config');
-      }
-
-      // Get the new container ID (may be different if container was recreated)
-      const { containerId: newContainerId } = await response.json();
-
-      // Check if any resource limits or port changed
-      const memoryChanged = resourceLimits?.memoryLimit !== undefined &&
-                          resourceLimits.memoryLimit !== selectedInstance.memoryLimit;
-      const cpuChanged = resourceLimits?.cpuLimit !== undefined &&
-                        resourceLimits.cpuLimit !== selectedInstance.cpuLimit;
-      const portChanged = resourceLimits?.port !== undefined &&
-                         resourceLimits.port !== selectedInstance.port;
-
-      if (memoryChanged || cpuChanged || portChanged) {
-        console.log(`Resource settings changed - Memory: ${selectedInstance.memoryLimit} -> ${resourceLimits?.memoryLimit}, CPU: ${selectedInstance.cpuLimit} -> ${resourceLimits?.cpuLimit}, Port: ${selectedInstance.port} -> ${resourceLimits?.port}`);
-        // Use the new container ID for resource limits update
-        const limitsResponse = await api.put(`/api/containers/${newContainerId}/limits`, resourceLimits);
-
-        if (!limitsResponse.ok) {
-          console.warn('Failed to update resource limits, but config was updated');
-        }
-      } else {
-        console.log('Resource limits unchanged, skipping API call');
-      }
-
-      fetchInstances();
-      setSelectedInstance(null);
-      toast({
-        title: "Success",
-        description: "Configuration updated successfully",
-        variant: "success",
-      });
-    } catch (error) {
-      console.error('Error updating config:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update config. Please check your connection.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -319,7 +266,6 @@ export function DashboardContent() {
                 onStop={(id) => handleInstanceAction(id, 'stop')}
                 onRestart={(id) => handleInstanceAction(id, 'restart')}
                 onDelete={handleDeleteClick}
-                onConfig={setSelectedInstance}
                 onLogs={setLogsInstance}
                 onConsole={setConsoleInstance}
               />
@@ -329,21 +275,6 @@ export function DashboardContent() {
       </div>
 
       {/* Dialogs */}
-      {selectedInstance && (
-        <ConfigEditor
-          isOpen={!!selectedInstance}
-          onClose={() => setSelectedInstance(null)}
-          onSave={handleConfigSave}
-          onTemplatesChange={handleTemplatesChange}
-          config={selectedInstance.config}
-          instanceName={selectedInstance.name}
-          containerId={selectedInstance.containerId!}
-          memoryLimit={selectedInstance.memoryLimit}
-          cpuLimit={selectedInstance.cpuLimit}
-          port={selectedInstance.port}
-        />
-      )}
-
       {logsInstance && (
         <LogsViewer
           isOpen={!!logsInstance}

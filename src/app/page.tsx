@@ -1,10 +1,12 @@
-import { DashboardContent } from '@/components/DashboardContent';
-import { ToasterProvider } from '@/components/ui/toaster';
+import { DashboardLayout } from '@/components/Dashboard';
+import { AuthProvider, InstanceProvider } from '@/components/providers';
 
 export default function Dashboard() {
   return (
-    <ToasterProvider>
-      <DashboardContent />
-    </ToasterProvider>
+    <AuthProvider>
+      <InstanceProvider>
+        <DashboardLayout />
+      </InstanceProvider>
+    </AuthProvider>
   );
 }

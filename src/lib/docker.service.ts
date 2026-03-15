@@ -511,6 +511,25 @@ export class DockerService {
   }
 
   /**
+   * Get container configuration as TOML string
+   * @returns The TOML configuration string
+   */
+  async getConfig(containerId: string): Promise<string> {
+    const container = docker.getContainer(containerId);
+    const containerInfo = await container.inspect();
+    const fs = require('fs');
+    const path = require('path');
+
+    // Get the config file path on the host
+    const containerName = containerInfo.Name.replace(/^\//, '');
+    const configPath = path.join(WORKSPACE_ROOT, containerName, '.zeroclaw', 'config.toml');
+
+    // Read config from file on host
+    const configContent = fs.readFileSync(configPath, 'utf-8');
+    return configContent;
+  }
+
+  /**
    * Update container configuration
    * @returns The container ID to use for subsequent operations (may be new if container was recreated)
    */

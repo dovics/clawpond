@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { dockerService } from '@/lib/docker.service';
 import { requireAuth } from '@/lib/auth-middleware';
+import { dockerContainerService, instanceStateManagerService } from '@/lib/services';
+import { formatErrorResponse, logError } from '@/lib/errors';
 
 export async function GET(
   request: NextRequest,
@@ -11,14 +12,12 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const stats = await dockerService.getContainerStats(id);
+    const stats = await instanceStateManagerService.getContainerStats(id);
     return NextResponse.json(stats);
   } catch (error) {
-    console.error('Error fetching container stats:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch container stats' },
-      { status: 500 }
-    );
+    logError(error, { endpoint: `/api/containers/[id]`, method: 'GET' });
+    const errorResponse = formatErrorResponse(error);
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }
 
@@ -34,16 +33,15 @@ export async function DELETE(
     const body = await request.json().catch(() => ({}));
     const { deleteWorkspace: deleteWorkspaceFlag } = body;
 
-    // Delete container and workspace using the combined method
+    // Note: Using legacy dockerService for workspace deletion
+    const { dockerService } = await import('@/lib/docker.service');
     const result = await dockerService.deleteContainerAndWorkspace(id, deleteWorkspaceFlag);
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error deleting container:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete container', success: false, workspaceDeleted: false },
-      { status: 500 }
-    );
+    logError(error, { endpoint: `/api/containers/[id]`, method: 'DELETE' });
+    const errorResponse = formatErrorResponse(error);
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }
 
@@ -58,16 +56,41 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    let success = false;
+    if (!body.action) {
+      return NextResponse.json(
+        { error: 'Action is required' },
+        { status: 400 }
+      );
+    }
+
+    // Convert short ID to full container ID if needed
+    const instances = await instanceStateManagerService.getInstances();
+    const instance = instances.find(i => i.id === id);
+
+    if (!instance) {
+      return NextResponse.json(
+        { error: 'Container not found' },
+        { status: 404 }
+      );
+    }
+
+    const containerId = instance.containerId;
+    if (!containerId) {
+      return NextResponse.json(
+        { error: 'Invalid container ID' },
+        { status: 400 }
+      );
+    }
+
     switch (body.action) {
       case 'start':
-        success = await dockerService.startContainer(id);
+        await dockerContainerService.startContainer(containerId);
         break;
       case 'stop':
-        success = await dockerService.stopContainer(id);
+        await dockerContainerService.stopContainer(containerId);
         break;
       case 'restart':
-        success = await dockerService.restartContainer(id);
+        await dockerContainerService.restartContainer(containerId);
         break;
       default:
         return NextResponse.json(
@@ -76,12 +99,10 @@ export async function PATCH(
         );
     }
 
-    return NextResponse.json({ success });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error performing container action:', error);
-    return NextResponse.json(
-      { error: 'Failed to perform action' },
-      { status: 500 }
-    );
+    logError(error, { endpoint: `/api/containers/[id]`, method: 'PATCH' });
+    const errorResponse = formatErrorResponse(error);
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }

@@ -41,7 +41,7 @@ export function ConsoleDialog({ instance, open, onClose }: ConsoleDialogProps) {
             background: '#1a1a1a',
             foreground: '#ffffff',
             cursor: '#ffffff',
-            selection: '#rgba(255, 255, 255, 0.3)',
+            selectionBackground: 'rgba(255, 255, 255, 0.3)',
           },
           allowProposedApi: true,
         });

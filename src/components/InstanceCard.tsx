@@ -14,7 +14,6 @@ interface InstanceCardProps {
   onStop: (id: string) => void;
   onRestart: (id: string) => void;
   onDelete: (instance: ZeroClawInstance) => void;
-  onConfig: (instance: ZeroClawInstance) => void;
   onLogs: (instance: ZeroClawInstance) => void;
   onConsole: (instance: ZeroClawInstance) => void;
 }
@@ -25,7 +24,6 @@ export function InstanceCard({
   onStop,
   onRestart,
   onDelete,
-  onConfig,
   onLogs,
   onConsole,
 }: InstanceCardProps) {
@@ -127,7 +125,7 @@ export function InstanceCard({
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-gray-400 hover:text-white"
-              onClick={() => onConfig(instance)}
+              onClick={() => window.location.href = `/instances/${instance.id}/config`}
               title="Settings"
             >
               <Settings className="h-4 w-4" />

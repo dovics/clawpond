@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from './auth';
+import { verifyToken, isAuthenticated as checkCookieAuth } from './auth';
 
 export async function requireAuth(request: NextRequest): Promise<NextResponse | null> {
-  // Get token from Authorization header (Bearer token)
+  // Method 1: Check if already authenticated via cookie
+  const cookieAuthed = await checkCookieAuth();
+  if (cookieAuthed) {
+    return null; // Auth is valid, continue
+  }
+
+  // Method 2: Get token from Authorization header (Bearer token)
   const authHeader = request.headers.get('authorization');
   let token = authHeader?.replace('Bearer ', '');
 
-  // Also check for token in query parameters (for SSE connections)
+  // Method 3: Also check for token in query parameters (for SSE connections)
   if (!token) {
     const urlToken = request.nextUrl.searchParams.get('token');
     if (urlToken) {
