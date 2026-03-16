@@ -11,9 +11,9 @@ export async function PUT(
 
   try {
     const { id } = await params;
-    const { memoryLimit, cpuLimit, port } = await request.json();
+    const { memoryLimit, cpuLimit, port, envVars } = await request.json();
 
-    const success = await dockerService.updateResourceLimits(id, memoryLimit, cpuLimit, port);
+    const success = await dockerService.updateResourceLimits(id, memoryLimit, cpuLimit, port, envVars);
 
     if (!success) {
       return NextResponse.json(

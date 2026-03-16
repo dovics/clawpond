@@ -99,21 +99,22 @@ export function preprocessSchema(schema: any): ResolvedSchema {
       }
     }
 
-    // Recurse into properties
+    // Recurse into properties - create a fresh visited set for each property
+    // to properly detect circular references only within each branch
     if (node.properties) {
       return {
         ...node,
         properties: Object.fromEntries(
-          Object.entries(node.properties).map(([k, v]) => [k, resolve(v, visited)])
+          Object.entries(node.properties).map(([k, v]) => [k, resolve(v, new Set(visited))])
         )
       }
     }
 
-    // Recurse into array items
+    // Recurse into array items - create a fresh visited set
     if (node.items) {
       return {
         ...node,
-        items: resolve(node.items, visited)
+        items: resolve(node.items, new Set(visited))
       }
     }
 

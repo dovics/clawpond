@@ -8,11 +8,13 @@ export interface FieldProps {
   disabled?: boolean
   path: string
   placeholder?: string
+  rootValue?: Record<string, any>
 }
 
 export interface FieldRendererProps {
   schema: ResolvedSchemaNode
   value: any
+  rootValue?: Record<string, any>
   onChange: (value: any, error?: string) => void
   error?: string
   disabled?: boolean

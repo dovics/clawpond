@@ -27,7 +27,14 @@ export function ConfigProvider({ children, instanceId }: ConfigProviderProps) {
         }
 
         const data = await response.json()
-        dispatch({ type: 'LOAD_CONFIG', payload: data.config })
+
+        // Extract api_url from provider when loading
+        const loadedConfig = { ...data.config }
+        if (loadedConfig.default_provider?.startsWith('custom:')) {
+          loadedConfig.api_url = loadedConfig.default_provider.replace('custom:', '')
+        }
+
+        dispatch({ type: 'LOAD_CONFIG', payload: loadedConfig })
       } catch (error) {
         dispatch({
           type: 'SET_ERROR',
@@ -54,10 +61,26 @@ export function ConfigProvider({ children, instanceId }: ConfigProviderProps) {
     dispatch({ type: 'SET_ERROR', payload: null })
 
     try {
+      // Combine api_url with provider if both are present
+      const configToSave = { ...state.config }
+      if (configToSave.api_url && configToSave.api_url.trim()) {
+        const apiUrl = configToSave.api_url.trim()
+        if (configToSave.default_provider === 'custom') {
+          configToSave.default_provider = `custom:${apiUrl}`
+        }
+        // Remove api_url from final config as it's now embedded in provider
+        delete configToSave.api_url
+      } else if (configToSave.default_provider?.startsWith('custom:') && !configToSave.api_url) {
+        // If provider is custom:URL but no api_url field, extract URL back
+        const customProvider = configToSave.default_provider
+        const url = customProvider.replace('custom:', '')
+        configToSave.api_url = url
+      }
+
       const response = await fetch(`/api/containers/${instanceId}/config`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config: state.config })
+        body: JSON.stringify({ config: configToSave })
       })
 
       if (!response.ok) {

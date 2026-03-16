@@ -701,12 +701,57 @@ export class DockerService {
         stdout: true,
         stderr: true,
         tail,
+        timestamps: true,
       });
-      return logs.toString('utf-8');
+      // Docker logs contain 8-byte headers for each line (stream type + timestamp)
+      // We need to strip these headers and clean up control characters
+      const rawString = logs.toString('utf-8');
+      return this.cleanDockerLogs(rawString);
     } catch (error) {
       console.error('Error getting logs:', error);
       return '';
     }
+  }
+
+  /**
+   * Clean Docker log output by removing 8-byte headers and control characters
+   */
+  private cleanDockerLogs(rawLogs: string): string {
+    // Docker uses 8-byte header for each line: [stream(1), 0, 0, 0, size(4), message]
+    // We need to remove these headers and any control characters
+    const lines = rawLogs.split('\n');
+    const cleanedLines: string[] = [];
+
+    for (const line of lines) {
+      // Remove the 8-byte header if present (stream type + size)
+      let cleanedLine = line;
+      if (line.length > 8) {
+        // Check if it looks like a Docker header (first byte is 1 or 2)
+        const firstByte = line.charCodeAt(0);
+        if (firstByte === 1 || firstByte === 2) {
+          // Try to extract size from bytes 4-7 (big-endian)
+          const size = (line.charCodeAt(4) << 24) | (line.charCodeAt(5) << 16) |
+                        (line.charCodeAt(6) << 8) | line.charCodeAt(7);
+          if (size > 0 && size < line.length - 8) {
+            cleanedLine = line.substring(8, 8 + size);
+          } else {
+            cleanedLine = line.substring(8);
+          }
+        }
+      }
+
+      // Remove control characters except newline, tab, and carriage return
+      cleanedLine = cleanedLine.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+      // Also handle unicode escape sequences like \u0001\u0000
+      cleanedLine = cleanedLine.replace(/\\u[0-9a-fA-F]{4}/g, '');
+
+      if (cleanedLine.trim() || cleanedLine === '') {
+        cleanedLines.push(cleanedLine);
+      }
+    }
+
+    return cleanedLines.join('\n');
   }
 
   /**
@@ -716,7 +761,8 @@ export class DockerService {
     containerId: string,
     memoryLimitMB?: number,
     cpuLimitCores?: number,
-    port?: number
+    port?: number,
+    envVars?: string[]
   ): Promise<boolean> {
     try {
       const container = docker.getContainer(containerId);
@@ -746,12 +792,17 @@ export class DockerService {
 
       const portChanged = newPort !== undefined && newPort !== currentPort;
 
-      if (!memoryChanged && !cpuChanged && !portChanged) {
+      // Check if environment variables changed
+      const currentEnv = containerInfo.Config.Env || [];
+      const newEnvVars = envVars || [];
+      const envChanged = this.hasEnvChanged(currentEnv, newEnvVars);
+
+      if (!memoryChanged && !cpuChanged && !portChanged && !envChanged) {
         console.log('Resource limits and port unchanged, skipping container recreation');
         return true;
       }
 
-      console.log(`Resource settings changed - Memory: ${currentMemoryLimit}MB -> ${newMemoryMB}MB, CPU: ${currentCpuLimit} -> ${newCpuCores} cores, Port: ${currentPort} -> ${newPort}`);
+      console.log(`Resource settings changed - Memory: ${currentMemoryLimit}MB -> ${newMemoryMB}MB, CPU: ${currentCpuLimit} -> ${newCpuCores} cores, Port: ${currentPort} -> ${newPort}, Env changed: ${envChanged}`);
 
       const newLimits: any = {};
 
@@ -805,13 +856,37 @@ export class DockerService {
       }
       // If newPort is undefined, don't expose any ports (leave both undefined)
 
+      // Build new environment variables
+      let newEnv: string[] = containerInfo.Config.Env || [];
+      if (envChanged && envVars && envVars.length > 0) {
+        // Build a map of system environment variables to preserve
+        const systemEnvKeys = new Set([
+          'PATH', 'HOME', 'USER', 'SHELL', 'LANG', 'LC_ALL',
+          'PYTHONPATH', 'NODE_PATH', 'GOPATH', 'CARGO_HOME',
+          'TZ', 'TERM', 'HOSTNAME', 'PWD', 'SHLVL'
+        ]);
+
+        // Filter out custom env vars (keep system env vars)
+        newEnv = newEnv.filter(env => {
+          const eqIndex = env.indexOf('=');
+          if (eqIndex > 0) {
+            const key = env.substring(0, eqIndex);
+            return systemEnvKeys.has(key);
+          }
+          return true;
+        });
+
+        // Add new custom environment variables
+        newEnv.push(...envVars);
+      }
+
       // Create new container with updated limits and port configuration
       const newContainerConfig = {
         name: containerName,
         Image: containerInfo.Config.Image,
         Cmd: containerInfo.Config.Cmd,
         User: containerInfo.Config.User,
-        Env: containerInfo.Config.Env,
+        Env: newEnv,
         ExposedPorts: newExposedPorts,
         HostConfig: {
           Binds: [`${mountConfigDir}:/zeroclaw-data`],

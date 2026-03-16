@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, RotateCcw, Play, Pause, RotateCcw as Restart, Trash2, Loader2, RefreshCw, Cpu, HardDrive, Network, Terminal, FileText, Settings, AlertTriangle, Activity } from 'lucide-react';
+import { ArrowLeft, Save, RotateCcw, Play, Pause, RotateCcw as Restart, Trash2, Loader2, RefreshCw, Cpu, HardDrive, Network, Terminal, FileText, Settings, AlertTriangle, Activity, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,12 @@ import { cn, formatDate } from '@/lib/utils';
 import { api } from '@/lib/api-client';
 import { SkillsManager } from './SkillsManager';
 import { FileEditor } from './FileEditor';
+
+// Environment variable type
+interface EnvVar {
+  key: string;
+  value: string;
+}
 
 interface InstanceDetailPageProps {
   instanceIdPromise: Promise<{ id: string }>;
@@ -44,10 +50,12 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
   const [port, setPort] = useState<number | undefined>(undefined);
   const [cpuLimit, setCpuLimit] = useState<number | undefined>(undefined);
   const [memoryLimit, setMemoryLimit] = useState<number | undefined>(undefined);
+  const [envVars, setEnvVars] = useState<EnvVar[]>([]);
   const [originalValues, setOriginalValues] = useState<{
     port?: number;
     cpuLimit?: number;
     memoryLimit?: number;
+    envVars?: EnvVar[];
   }>({});
 
   // 标记是否需要初始化表单
@@ -74,10 +82,47 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
           setPort(data.port);
           setCpuLimit(data.cpuLimit);
           setMemoryLimit(data.memoryLimit);
+
+          // Fetch environment variables
+          let envVars: EnvVar[] = [];
+          try {
+            const envResponse = await api.get(`/api/containers/${data.containerId}/env`);
+            if (envResponse.ok) {
+              const envData = await envResponse.json();
+              const envArray = envData.env || [];
+              // Filter out system env vars and parse to key-value pairs
+              const systemEnvKeys = new Set([
+                'PATH', 'HOME', 'USER', 'SHELL', 'LANG', 'LC_ALL',
+                'PYTHONPATH', 'NODE_PATH', 'GOPATH', 'CARGO_HOME',
+                'TZ', 'TERM', 'HOSTNAME', 'PWD', 'SHLVL', 'MOUNT_WORKSPACE_ROOT'
+              ]);
+              envVars = envArray
+                .filter((env: string) => {
+                  const eqIndex = env.indexOf('=');
+                  if (eqIndex > 0) {
+                    const key = env.substring(0, eqIndex);
+                    return !systemEnvKeys.has(key);
+                  }
+                  return false;
+                })
+                .map((env: string) => {
+                  const eqIndex = env.indexOf('=');
+                  return {
+                    key: env.substring(0, eqIndex),
+                    value: env.substring(eqIndex + 1)
+                  };
+                });
+            }
+          } catch (envError) {
+            console.error('Error fetching env vars:', envError);
+          }
+
+          setEnvVars(envVars);
           setOriginalValues({
             port: data.port,
             cpuLimit: data.cpuLimit,
             memoryLimit: data.memoryLimit,
+            envVars: envVars,
           });
           formInitialized.current = true;
         }
@@ -145,11 +190,34 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
   }, [instanceId, instance, fetchStatus]);
 
   // Check if form has unsaved changes
+  // Check if env vars have changed
+  const hasEnvChanges = JSON.stringify(envVars) !== JSON.stringify(originalValues.envVars);
+
   const hasChanges = instance && (
     port !== originalValues.port ||
     cpuLimit !== originalValues.cpuLimit ||
-    memoryLimit !== originalValues.memoryLimit
+    memoryLimit !== originalValues.memoryLimit ||
+    hasEnvChanges
   );
+
+  // Handle add environment variable
+  const handleAddEnvVar = () => {
+    setEnvVars([...envVars, { key: '', value: '' }]);
+  };
+
+  // Handle remove environment variable
+  const handleRemoveEnvVar = (index: number) => {
+    const newEnvVars = [...envVars];
+    newEnvVars.splice(index, 1);
+    setEnvVars(newEnvVars);
+  };
+
+  // Handle update environment variable
+  const handleEnvVarChange = (index: number, field: 'key' | 'value', newValue: string) => {
+    const newEnvVars = [...envVars];
+    newEnvVars[index][field] = newValue;
+    setEnvVars(newEnvVars);
+  };
 
   // Handle save and rebuild
   const handleSave = async () => {
@@ -158,11 +226,17 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
     setSaving(true);
     setRebuilding(true);
 
+    // Convert env vars to array format
+    const envVarsArray = envVars
+      .filter(e => e.key.trim() !== '')
+      .map(e => `${e.key}=${e.value}`);
+
     try {
       const response = await api.put(`/api/containers/${instance.containerId}/limits`, {
         memoryLimit,
         cpuLimit,
         port,
+        envVars: envVarsArray,
       });
 
       if (response.ok) {
@@ -173,7 +247,7 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
         });
         // Refresh instance data
         await fetchInstance();
-        setOriginalValues({ port, cpuLimit, memoryLimit });
+        setOriginalValues({ port, cpuLimit, memoryLimit, envVars });
       } else {
         const error = await response.json();
         toast({
@@ -200,6 +274,7 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
     setPort(originalValues.port);
     setCpuLimit(originalValues.cpuLimit);
     setMemoryLimit(originalValues.memoryLimit);
+    setEnvVars(originalValues.envVars || []);
     toast({
       title: 'Reset',
       description: 'Configuration has been reset to original values',
@@ -658,6 +733,73 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
                             </div>
                           </div>
                         </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Environment Variables */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <HardDrive className="h-5 w-5" />
+                            <h3 className="font-medium">Environment Variables</h3>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleAddEnvVar}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Variable
+                          </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Configure custom environment variables for the container. Changes will require a container rebuild.
+                        </p>
+
+                        {envVars.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                            <p>No environment variables configured</p>
+                            <p className="text-sm">Click "Add Variable" to add one</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {envVars.map((envVar, index) => (
+                              <div key={index} className="flex items-center gap-3">
+                                <div className="flex-1 grid grid-cols-2 gap-3">
+                                  <Input
+                                    placeholder="KEY"
+                                    value={envVar.key}
+                                    onChange={(e) => handleEnvVarChange(index, 'key', e.target.value)}
+                                    className="font-mono"
+                                  />
+                                  <Input
+                                    placeholder="Value"
+                                    value={envVar.value}
+                                    onChange={(e) => handleEnvVarChange(index, 'value', e.target.value)}
+                                  />
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleRemoveEnvVar(index)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {hasEnvChanges && (
+                          <div className="flex items-start gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                            <AlertTriangle className="h-4 w-4 text-yellow-500 shrink-0 mt-0.5" />
+                            <p className="text-sm text-yellow-500">
+                              Environment variables have been modified. Click "Save & Rebuild" to apply changes.
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       <Separator />

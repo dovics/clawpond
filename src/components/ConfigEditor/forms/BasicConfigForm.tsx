@@ -11,13 +11,8 @@ import { ConfigCategoryFormProps } from '../types'
 export function BasicConfigForm({ config, onChange, errors, disabled }: ConfigCategoryFormProps) {
   const resolvedSchema = preprocessSchema(configSchema)
 
-  // Get current provider value
-  const currentProvider = config?.default_provider || ''
-
-  // Determine if we should show api_url field (only for custom provider)
-  const isCustomProvider = currentProvider === 'custom' || currentProvider?.startsWith('custom:')
-
   // Parse custom URL from provider if in custom mode
+  const currentProvider = config?.default_provider || ''
   const customUrl = useMemo(() => {
     if (currentProvider?.startsWith('custom:')) {
       return currentProvider.replace('custom:', '')
@@ -25,10 +20,8 @@ export function BasicConfigForm({ config, onChange, errors, disabled }: ConfigCa
     return ''
   }, [currentProvider])
 
-  // Basic category fields - conditionally include api_url
-  const basicFields = isCustomProvider
-    ? ['default_provider', 'default_model', 'default_temperature', 'api_key', 'api_url']
-    : ['default_provider', 'default_model', 'default_temperature', 'api_key']
+  // Basic category fields - always include api_url
+  const basicFields = ['default_provider', 'default_model', 'default_temperature', 'api_key', 'api_url']
 
   const basicSchema: { type: 'object'; properties: Record<string, ResolvedSchemaNode> } = {
     type: 'object',
@@ -51,45 +44,27 @@ export function BasicConfigForm({ config, onChange, errors, disabled }: ConfigCa
     }
   })
 
-  // Create effective config value with custom URL if in custom mode
+  // Create effective config value
+  // Show custom URL in api_url field if provider is in custom:URL format
   const effectiveConfig = useMemo(() => {
     const base = config || {}
-    if (isCustomProvider) {
+
+    // If api_url is already set, use it as-is
+    if (base.api_url && base.api_url.trim()) {
+      return base
+    }
+
+    // Otherwise, populate from provider if in custom mode
+    if (customUrl) {
       return { ...base, api_url: customUrl }
     }
+
     return base
-  }, [config, isCustomProvider, customUrl])
+  }, [config, customUrl])
 
+  // Handle change - pass through directly without modifying provider
   const handleChange = (updates: Record<string, any>) => {
-    const finalUpdates = { ...updates }
-
-    // Handle api_url change - combine with custom prefix
-    if (updates.api_url !== undefined) {
-      const apiUrl = updates.api_url
-      delete finalUpdates.api_url
-
-      if (apiUrl && apiUrl.trim()) {
-        // Set provider to custom:URL format
-        finalUpdates.default_provider = `custom:${apiUrl.trim()}`
-      } else if (currentProvider?.startsWith('custom:')) {
-        // If URL is empty, reset to just 'custom'
-        finalUpdates.default_provider = 'custom'
-      }
-    }
-
-    // Handle provider change
-    if (updates.default_provider !== undefined) {
-      const newProvider = updates.default_provider
-      if (newProvider === 'custom' && customUrl) {
-        // If switching to custom and we have a URL, preserve it
-        finalUpdates.default_provider = `custom:${customUrl}`
-      } else if (newProvider !== 'custom' && currentProvider?.startsWith('custom:')) {
-        // If switching away from custom, also clear api_url from config
-        // This will be handled by the next render
-      }
-    }
-
-    onChange(finalUpdates)
+    onChange(updates)
   }
 
   return (

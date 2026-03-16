@@ -45,19 +45,17 @@ export async function PUT(
   try {
     const { id } = await params;
     const contentType = request.headers.get('content-type') || '';
-    let tomlConfig: string;
+    let config: ConfigObject;
 
     // Handle JSON format
     if (contentType.includes('application/json')) {
       const body = await request.json() as { config?: ConfigObject };
-      const config: ConfigObject = body.config || body;
-
-      // Convert JSON to TOML
-      tomlConfig = TOML.stringify(config);
+      config = body.config || body;
     }
     // Handle TOML format (backward compatibility)
     else if (contentType.includes('text/plain')) {
-      tomlConfig = await request.text();
+      const tomlString = await request.text();
+      config = TOML.parse(tomlString) as ConfigObject;
     }
     else {
       return NextResponse.json(
@@ -66,7 +64,7 @@ export async function PUT(
       );
     }
 
-    const newContainerId = await dockerService.updateConfig(id, tomlConfig);
+    const newContainerId = await dockerService.updateConfig(id, config);
     return NextResponse.json({ success: true, containerId: newContainerId });
   } catch (error) {
     console.error('Error updating config:', error);

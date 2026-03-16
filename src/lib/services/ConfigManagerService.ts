@@ -28,7 +28,8 @@ export class ConfigManagerService {
    */
   getConfigDir(instanceName: string): string {
     const sanitized = instanceName.toLowerCase().replace(/[^a-z0-9_.-]/g, '-');
-    return path.join(this.workspaceRoot, `openclaw-${sanitized}`, '.zeroclaw');
+    // Use the sanitized name directly - container names already have 'openclaw-' prefix
+    return path.join(this.workspaceRoot, sanitized, '.zeroclaw');
   }
 
   /**

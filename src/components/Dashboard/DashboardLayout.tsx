@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { useInstances } from '@/components/providers';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
-import { Plus, Layers } from 'lucide-react';
+import { Plus, Layers, LogOut } from 'lucide-react';
 import { InstanceCard } from '@/components/InstanceCard';
 import { useInstanceDialogs } from './useInstanceDialogs';
 import { CreateInstanceDialog } from './dialogs/CreateInstanceDialog';
@@ -17,6 +18,7 @@ import { ConsoleDialog } from '@/components/ConsoleDialog';
  */
 export function DashboardLayout() {
   const { instances, loading, error, refresh } = useInstances();
+  const { logout } = useAuth();
   const {
     openDialog,
     selectedInstance,
@@ -52,6 +54,14 @@ export function DashboardLayout() {
           >
             <Plus className="mr-2 h-4 w-4" />
             New Instance
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={() => logout()}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
           </Button>
         </div>
       </div>

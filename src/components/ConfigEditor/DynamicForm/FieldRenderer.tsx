@@ -12,8 +12,26 @@ import { ObjectField } from './fields/ObjectField'
 import { KeyValueField } from './fields/KeyValueField'
 import { PlaceholderField } from './fields/PlaceholderField'
 
-export function FieldRenderer({ schema, value, onChange, error, disabled, path }: FieldRendererProps) {
+export function FieldRenderer({ schema, value, rootValue, onChange, error, disabled, path }: FieldRendererProps) {
   const uiOptions = getFieldUI(path, schema)
+
+  // Check condition - hide field if condition is not met
+  if (uiOptions.condition) {
+    const { field, value: conditionValue, matchType = 'exact' } = uiOptions.condition
+    // Get the actual value from the root config (full config object)
+    const fieldValue = rootValue?.[field]
+
+    let matches = false
+    if (matchType === 'prefix') {
+      matches = typeof fieldValue === 'string' && fieldValue.startsWith(String(conditionValue))
+    } else {
+      matches = fieldValue === conditionValue
+    }
+
+    if (!matches) {
+      return null
+    }
+  }
 
   // Apply metadata overrides
   const effectiveSchema = {

@@ -47,6 +47,7 @@ export const DynamicForm = memo(function DynamicForm({
             <FieldRenderer
               schema={fieldSchema as ResolvedSchemaNode}
               value={fieldValue}
+              rootValue={value}
               onChange={(v, e) => handleChange(key, v, e)}
               error={error}
               disabled={disabled}

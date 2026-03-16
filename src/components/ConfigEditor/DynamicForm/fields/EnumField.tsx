@@ -20,6 +20,10 @@ export const EnumField = memo(function EnumField({
   const enumValues = schema.enum || []
   const hasEnums = enumValues.length > 0
 
+  // Store the original value with custom: prefix for restoration
+  const currentValue = value ?? schema.default ?? ''
+  const hasCustomPrefix = String(currentValue).startsWith('custom:')
+
   if (!hasEnums) {
     return (
       <div className="text-sm text-destructive">
@@ -28,8 +32,25 @@ export const EnumField = memo(function EnumField({
     )
   }
 
+  // Get display value - handle custom:URL format
+  const getDisplayValue = (val: any): string => {
+    const stringVal = String(val ?? '')
+    // Check if value starts with custom: prefix
+    if (stringVal.startsWith('custom:')) {
+      return 'custom'
+    }
+    return stringVal
+  }
+
+  const displayValue = getDisplayValue(currentValue)
+
   const handleChange = (newValue: string) => {
-    onChange(newValue, undefined)
+    // If selecting "custom" and we already have a custom URL, preserve it
+    if (newValue === 'custom' && hasCustomPrefix) {
+      onChange(currentValue, undefined)
+    } else {
+      onChange(newValue, undefined)
+    }
   }
 
   return (
@@ -41,7 +62,7 @@ export const EnumField = memo(function EnumField({
 
       <select
         id={path}
-        value={value ?? schema.default ?? ''}
+        value={displayValue}
         onChange={(e) => handleChange(e.target.value)}
         disabled={disabled}
         className={`
