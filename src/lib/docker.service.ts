@@ -25,6 +25,13 @@ const MOUNT_WORKSPACE_ROOT = process.env.MOUNT_WORKSPACE_ROOT || WORKSPACE_ROOT;
  * 获取当前进程的 UID 和 GID
  * 直接获取当前运行进程的用户和组 ID
  */
+/**
+ * Clean string by removing control characters except newlines and tabs
+ */
+function cleanString(str: string): string {
+  return str.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '');
+}
+
 function getUidGid(): { uid: number; gid: number } {
   try {
     // 使用 Node.js 内置方法获取当前进程的用户和组 ID
@@ -1017,7 +1024,7 @@ export class DockerService {
         const agentsFilePath = path.join(WORKSPACE_ROOT, containerName, 'workspace/AGENTS.md');
 
         if (fs.existsSync(agentsFilePath)) {
-          return fs.readFileSync(agentsFilePath, 'utf-8');
+          return cleanString(fs.readFileSync(agentsFilePath, 'utf-8'));
         }
         return '';
       }
@@ -1048,7 +1055,7 @@ export class DockerService {
           try {
             const info = await exec.inspect();
             if (info.ExitCode === 0) {
-              resolve(output);
+              resolve(cleanString(output));
             } else {
               // File doesn't exist or error reading
               console.log('AGENTS.md not found in container (exit code:', info.ExitCode + ')');
@@ -1086,10 +1093,105 @@ export class DockerService {
         fs.mkdirSync(workspaceDir, { recursive: true });
       }
 
-      // Write AGENTS.md file
-      fs.writeFileSync(agentsFilePath, content, 'utf-8');
+      // Write AGENTS.md file (trim content to remove any extra whitespace)
+      fs.writeFileSync(agentsFilePath, cleanString(content), 'utf-8');
     } catch (error) {
       console.error('Error writing AGENTS.md:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get SOUL.md file content for a container
+   * Reads from inside the container using docker exec
+   */
+  async getSoulFile(containerId: string): Promise<string> {
+    try {
+      const container = docker.getContainer(containerId);
+      const containerInfo = await container.inspect();
+
+      // Check if container is running
+      if (containerInfo.State.Status !== 'running') {
+        // If not running, try to read from host mount
+        const fs = require('fs');
+        const path = require('path');
+        const containerName = containerInfo.Name.replace(/^\//, '');
+        const soulFilePath = path.join(WORKSPACE_ROOT, containerName, 'workspace/SOUL.md');
+
+        if (fs.existsSync(soulFilePath)) {
+          return cleanString(fs.readFileSync(soulFilePath, 'utf-8'));
+        }
+        return '';
+      }
+
+      // Use docker exec to read file from container
+      const exec = await container.exec({
+        Cmd: ['cat', '/zeroclaw-data/workspace/SOUL.md'],
+        AttachStdout: true,
+        AttachStderr: true,
+      });
+
+      const stream = await exec.start({ Detach: false });
+
+      return new Promise((resolve) => {
+        let output = '';
+        let errorOutput = '';
+
+        stream.on('data', (chunk: Buffer) => {
+          output += chunk.toString('utf-8');
+        });
+
+        stream.on('error', (err: Error) => {
+          errorOutput += err.message;
+        });
+
+        stream.on('end', async () => {
+          // Check the exit code
+          try {
+            const info = await exec.inspect();
+            if (info.ExitCode === 0) {
+              resolve(cleanString(output));
+            } else {
+              // File doesn't exist or error reading
+              console.log('SOUL.md not found in container (exit code:', info.ExitCode + ')');
+              resolve('');
+            }
+          } catch (inspectError) {
+            console.error('Error inspecting exec:', inspectError);
+            resolve('');
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error reading SOUL.md:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Save SOUL.md file content for a container
+   */
+  async saveSoulFile(containerId: string, content: string): Promise<void> {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+
+      const container = docker.getContainer(containerId);
+      const containerInfo = await container.inspect();
+      const containerName = containerInfo.Name.replace(/^\//, '');
+
+      const workspaceDir = path.join(WORKSPACE_ROOT, containerName);
+      const soulFilePath = path.join(workspaceDir, 'workspace/SOUL.md');
+
+      // Ensure workspace directory exists
+      if (!fs.existsSync(workspaceDir)) {
+        fs.mkdirSync(workspaceDir, { recursive: true });
+      }
+
+      // Write SOUL.md file
+      fs.writeFileSync(soulFilePath, cleanString(content), 'utf-8');
+    } catch (error) {
+      console.error('Error writing SOUL.md:', error);
       throw error;
     }
   }

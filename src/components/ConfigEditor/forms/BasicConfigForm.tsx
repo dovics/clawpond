@@ -5,7 +5,7 @@ import { useMemo } from 'react'
 import { DynamicForm } from '../DynamicForm'
 import { preprocessSchema, ResolvedSchemaNode } from '@/lib/config/schema/preprocessor'
 import { getFieldUI } from '@/lib/config/schema/fieldMetadata'
-import configSchema from '@/../../docs/config.schema.json'
+import configSchema from '@/../../public/config.schema.json'
 import { ConfigCategoryFormProps } from '../types'
 
 export function BasicConfigForm({ config, onChange, errors, disabled }: ConfigCategoryFormProps) {

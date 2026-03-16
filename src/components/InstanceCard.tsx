@@ -16,6 +16,7 @@ interface InstanceCardProps {
   onDelete: (instance: ZeroClawInstance) => void;
   onLogs: (instance: ZeroClawInstance) => void;
   onConsole: (instance: ZeroClawInstance) => void;
+  onClick?: (instance: ZeroClawInstance) => void;
 }
 
 export function InstanceCard({
@@ -26,6 +27,7 @@ export function InstanceCard({
   onDelete,
   onLogs,
   onConsole,
+  onClick,
 }: InstanceCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [configApplying, setConfigApplying] = useState(false);
@@ -65,14 +67,35 @@ export function InstanceCard({
     unknown: 'bg-gray-400',
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent navigation when clicking on buttons
+    if ((e.target as HTMLElement).closest('button')) return;
+    if (onClick) {
+      onClick(instance);
+    } else {
+      // Default behavior: navigate to detail page
+      window.location.href = `/instances/${instance.id}`;
+    }
+  };
+
   return (
     <Card
-      className="overflow-hidden transition-all duration-300 hover:shadow-xl bg-card border-primary/20"
+      className="overflow-hidden transition-all duration-300 hover:shadow-xl bg-card border-primary/20 cursor-pointer"
+      onClick={handleCardClick}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg flex items-center gap-2 text-white">
+            <CardTitle className="text-lg flex items-center gap-2 text-white cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onClick) {
+                  onClick(instance);
+                } else {
+                  window.location.href = `/instances/${instance.id}`;
+                }
+              }}
+            >
               {instance.name}
               {configApplying ? (
                 <Loader2 className="h-4 w-4 text-yellow-500 animate-spin" />
@@ -85,15 +108,6 @@ export function InstanceCard({
                 />
               )}
             </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">
-              {instance.port ? `Port: ${instance.port}` : 'Port: Not exposed'}
-            </CardDescription>
-            <CardDescription className="text-xs text-muted-foreground">
-              Created: {new Date(instance.createdAt).toLocaleString()}
-            </CardDescription>
-            <CardDescription className="text-xs text-muted-foreground">
-              Last Active: {instance.lastActive ? new Date(instance.lastActive).toLocaleString() : 'Never'}
-            </CardDescription>
             {configApplying && (
               <CardDescription className="text-xs text-yellow-500 flex items-center gap-1">
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -149,7 +163,7 @@ export function InstanceCard({
           <div className="text-sm">
             <div className="font-medium text-white">Model</div>
             <div className="text-xs text-muted-foreground">
-              {instance.config.default_model || 'Not configured'}
+              {instance.config?.default_model || 'Not configured'}
             </div>
           </div>
 

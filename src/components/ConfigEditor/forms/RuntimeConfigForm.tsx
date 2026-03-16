@@ -3,7 +3,7 @@
 
 import { DynamicForm } from '../DynamicForm'
 import { preprocessSchema, ResolvedSchemaNode } from '@/lib/config/schema/preprocessor'
-import configSchema from '@/../../docs/config.schema.json'
+import configSchema from '@/../../public/config.schema.json'
 import { ConfigCategoryFormProps } from '../types'
 
 export function RuntimeConfigForm({ config, onChange, errors, disabled }: ConfigCategoryFormProps) {
