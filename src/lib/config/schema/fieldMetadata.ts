@@ -136,9 +136,9 @@ export const fieldMetadata: Record<string, FieldUIOptions> = {
   'autonomy.level': {
     widget: 'select',
     options: {
-      'disabled': '禁用',
+      'readonly': '只读',
       'supervised': '受监督',
-      'auto': '自动'
+      'full': '完全'
     },
     label: '自主级别'
   },

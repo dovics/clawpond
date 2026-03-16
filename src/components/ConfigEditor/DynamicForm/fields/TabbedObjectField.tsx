@@ -47,10 +47,28 @@ export const TabbedObjectField = memo(function TabbedObjectField({
   }, [])
 
   const handleFieldChange = useCallback((fieldPath: string, fieldValue: any, fieldError?: string) => {
-    const updated = {
-      ...(value || {}),
-      [fieldPath]: fieldValue
+    // Handle nested paths like "telegram.bot_token" by creating nested objects
+    const updated = { ...(value || {}) }
+
+    // Split the path into parts
+    const parts = fieldPath.split('.')
+
+    if (parts.length === 1) {
+      // Simple field - direct update
+      updated[parts[0]] = fieldValue
+    } else {
+      // Nested field - create nested structure
+      let current = updated
+      for (let i = 0; i < parts.length - 1; i++) {
+        const part = parts[i]
+        if (!(part in current) || typeof current[part] !== 'object') {
+          current[part] = {}
+        }
+        current = current[part]
+      }
+      current[parts[parts.length - 1]] = fieldValue
     }
+
     onChange(updated)
   }, [value, onChange])
 
