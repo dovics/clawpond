@@ -231,24 +231,6 @@ export function CreateInstanceDialog({
                       <div className="space-y-2">
                         <div className="text-sm font-medium text-gray-300">Template Configuration</div>
                         <div className="bg-gray-800 rounded p-3 text-sm space-y-1">
-                          {selectedTemplate.config.default_provider && (
-                            <div className="flex">
-                              <span className="text-gray-400 w-24">Provider:</span>
-                              <span className="text-white">{selectedTemplate.config.default_provider}</span>
-                            </div>
-                          )}
-                          {selectedTemplate.config.default_model && (
-                            <div className="flex">
-                              <span className="text-gray-400 w-24">Model:</span>
-                              <span className="text-white">{selectedTemplate.config.default_model}</span>
-                            </div>
-                          )}
-                          {(selectedTemplate.config as any).api_key && (
-                            <div className="flex">
-                              <span className="text-gray-400 w-24">API Key:</span>
-                              <span className="text-white">••••••••</span>
-                            </div>
-                          )}
                           {selectedTemplate.config.autonomy?.level && (
                             <div className="flex">
                               <span className="text-gray-400 w-24">Autonomy:</span>

@@ -158,11 +158,6 @@ export interface ContainerStats {
 export interface CreateInstanceOptions {
   name: string;
   port?: number;
-  apiKey?: string;
-  provider?: string;
-  model?: string;
-  baseUrl?: string;
-  temperature?: number;
   config?: ZeroClawConfig;
   memoryLimit?: number; // in MB
   cpuLimit?: number; // in cores (e.g., 0.5 for half a core)

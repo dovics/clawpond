@@ -231,27 +231,10 @@ export class DockerService {
       // 获取当前用户 UID/GID
       const { uid, gid } = getUidGid();
 
-      // Build config with model and temperature settings
+      // Build config from template settings
       const configOverride: any = {
         ...options.config,
       };
-
-      if (options.provider) {
-        configOverride.default_provider = options.provider;
-      }
-
-      if (options.model) {
-        configOverride.default_model = options.model;
-      }
-
-      if (options.temperature !== undefined) {
-        configOverride.default_temperature = options.temperature;
-      }
-
-      // Handle custom OpenAI-compatible provider
-      if (options.baseUrl) {
-        configOverride.api_base = options.baseUrl;
-      }
 
       // Create config directory on host using workspace root from environment variable
       // System will automatically create config file, we just need to provide the directory
@@ -283,14 +266,6 @@ export class DockerService {
         `ZEROCLAW_GATEWAY_HOST=0.0.0.0`,
         `ZEROCLAW_ALLOW_PUBLIC_BIND=true`,
       ];
-
-      if (options.apiKey) {
-        env.push(`API_KEY=${options.apiKey}`);
-      }
-
-      if (options.provider) {
-        env.push(`ZEROCLAW_PROVIDER=${options.provider}`);
-      }
 
       // 从配置中读取Docker环境变量
       if (configOverride.runtime?.docker?.env && Array.isArray(configOverride.runtime.docker.env)) {
@@ -340,40 +315,6 @@ export class DockerService {
 
       const container = await docker.createContainer(containerConfig);
       await container.start();
-
-      // Execute zeroclaw onboard command to configure the instance
-      if (options.apiKey && (options.provider || options.model)) {
-        try {
-          // Wait a moment for the container to be ready
-          await new Promise(resolve => setTimeout(resolve, 2000));
-
-          const onboardCmd = ['zeroclaw', 'onboard'];
-          if (options.apiKey) {
-            onboardCmd.push('--api-key', options.apiKey);
-          }
-          if (options.provider) {
-            onboardCmd.push('--provider', options.provider);
-          }
-          if (options.model) {
-            onboardCmd.push('--model', options.model);
-          }
-
-          const exec = await container.exec({
-            Cmd: onboardCmd,
-            AttachStdout: true,
-            AttachStderr: true,
-          });
-
-          // Start the exec and wait for completion
-          const stream = await exec.start({ Detach: false });
-          await new Promise((resolve, reject) => {
-            stream.on('end', resolve);
-            stream.on('error', reject);
-          });
-        } catch (onboardError) {
-          console.warn('Onboard command failed (this may be expected):', onboardError);
-        }
-      }
 
       // Apply template config asynchronously if provided
       if (hasTemplateConfig) {

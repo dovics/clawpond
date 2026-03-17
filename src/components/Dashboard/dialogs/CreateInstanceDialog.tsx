@@ -30,9 +30,6 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
   const [port, setPort] = useState<string>('');
   const [memoryLimit, setMemoryLimit] = useState(500);
   const [cpuLimit, setCpuLimit] = useState(0.5);
-  const [provider, setProvider] = useState('');
-  const [model, setModel] = useState('');
-  const [apiKey, setApiKey] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,9 +47,6 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
         port: port ? parseInt(port) : undefined,
         memoryLimit,
         cpuLimit,
-        provider: provider || undefined,
-        model: model || undefined,
-        apiKey: apiKey || undefined,
       });
 
       // Reset form
@@ -60,9 +54,6 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
       setPort('');
       setMemoryLimit(500);
       setCpuLimit(0.5);
-      setProvider('');
-      setModel('');
-      setApiKey('');
 
       onClose();
     } catch (error) {
@@ -147,49 +138,6 @@ export function CreateInstanceDialog({ open, onClose }: CreateInstanceDialogProp
                 min="0.1"
                 max="4"
                 step="0.1"
-              />
-            </div>
-
-            {/* Provider */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="provider" className="text-right">
-                Provider
-              </Label>
-              <Input
-                id="provider"
-                value={provider}
-                onChange={(e) => setProvider(e.target.value)}
-                className="col-span-3"
-                placeholder="openrouter"
-              />
-            </div>
-
-            {/* Model */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="model" className="text-right">
-                Model
-              </Label>
-              <Input
-                id="model"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="col-span-3"
-                placeholder="anthropic/claude-sonnet-4.6"
-              />
-            </div>
-
-            {/* API Key */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="apiKey" className="text-right">
-                API Key
-              </Label>
-              <Input
-                id="apiKey"
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="col-span-3"
-                placeholder="sk-..."
               />
             </div>
           </div>

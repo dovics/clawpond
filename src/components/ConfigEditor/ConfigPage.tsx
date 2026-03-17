@@ -3,12 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Save, RotateCcw, FileCode, Layers } from 'lucide-react'
+import { ArrowLeft, Save, RotateCcw, FileCode } from 'lucide-react'
 import { useToast } from '@/components/ui/toaster'
 import { api } from '@/lib/api-client'
 import { ConfigLayout } from './ConfigLayout'
 import { ConfigPreview } from './ConfigPreview'
-import { ConfigTemplates } from './ConfigTemplates'
 import { UnsavedChangesDialog } from './UnsavedChangesDialog'
 import { ConfigProvider, useConfigContext } from '@/contexts/ConfigContext'
 
@@ -20,7 +19,6 @@ export function ConfigPage({ instanceIdPromise }: ConfigPageProps) {
   const router = useRouter()
   const [instanceId, setInstanceId] = useState<string | null>(null)
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
-  const [templatesOpen, setTemplatesOpen] = useState(false)
 
   // Resolve instance ID from promise
   useEffect(() => {
@@ -64,8 +62,6 @@ export function ConfigPage({ instanceIdPromise }: ConfigPageProps) {
       <ConfigPageContent
         instanceId={instanceId}
         onBack={() => router.back()}
-        templatesOpen={templatesOpen}
-        setTemplatesOpen={setTemplatesOpen}
         showUnsavedDialog={showUnsavedDialog}
         setShowUnsavedDialog={setShowUnsavedDialog}
         onConfirmNavigation={() => router.back()}
@@ -77,8 +73,6 @@ export function ConfigPage({ instanceIdPromise }: ConfigPageProps) {
 interface ConfigPageContentProps {
   instanceId: string
   onBack: () => void
-  templatesOpen: boolean
-  setTemplatesOpen: (open: boolean) => void
   showUnsavedDialog: boolean
   setShowUnsavedDialog: (show: boolean) => void
   onConfirmNavigation: () => void
@@ -87,8 +81,6 @@ interface ConfigPageContentProps {
 function ConfigPageContent({
   instanceId,
   onBack,
-  templatesOpen,
-  setTemplatesOpen,
   showUnsavedDialog,
   setShowUnsavedDialog,
   onConfirmNavigation
@@ -99,8 +91,7 @@ function ConfigPageContent({
     state,
     saveConfig,
     resetConfig,
-    setPreviewOpen,
-    updateConfig
+    setPreviewOpen
   } = useConfigContext()
 
   const handleSave = async () => {
@@ -175,14 +166,6 @@ function ConfigPageContent({
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => setTemplatesOpen(true)}
-                  disabled={state.loading}
-                >
-                  <Layers className="h-4 w-4 mr-2" />
-                  应用模板
-                </Button>
-                <Button
-                  variant="outline"
                   onClick={() => setPreviewOpen(true)}
                   disabled={!state.config || state.loading}
                 >
@@ -215,22 +198,11 @@ function ConfigPageContent({
 
       {/* Dialogs */}
       {state.config && (
-        <>
-          <ConfigPreview
-            config={state.config}
-            open={state.previewOpen}
-            onOpenChange={setPreviewOpen}
-          />
-
-          <ConfigTemplates
-            open={templatesOpen}
-            onOpenChange={(open) => setTemplatesOpen(open)}
-            onSelectTemplate={(template) => {
-              updateConfig(template.config)
-              setTemplatesOpen(false)
-            }}
-          />
-        </>
+        <ConfigPreview
+          config={state.config}
+          open={state.previewOpen}
+          onOpenChange={setPreviewOpen}
+        />
       )}
 
       <UnsavedChangesDialog
