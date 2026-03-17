@@ -159,6 +159,8 @@ export function DashboardLayout() {
         <TemplateManagerDialog
           open={true}
           onClose={closeDialog}
+          instances={instances}
+          onTemplatesChange={refresh}
         />
       )}
 

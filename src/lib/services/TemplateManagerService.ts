@@ -22,6 +22,7 @@ export interface Template {
   config: ZeroClawConfig;
   createdAt: string;
   updatedAt: string;
+  sourceInstanceId?: string;
 }
 
 /**

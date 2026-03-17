@@ -146,12 +146,10 @@ export function TemplateManagerDialog({
       }
 
       const response = await api.post('/api/templates', {
-        body: JSON.stringify({
-          name: formData.name,
-          description: formData.description,
-          config: configToSave,
-          sourceInstanceId: instance.containerId,
-        }),
+        name: formData.name,
+        description: formData.description,
+        config: configToSave,
+        sourceInstanceId: instance.containerId,
       });
 
       if (response.ok) {

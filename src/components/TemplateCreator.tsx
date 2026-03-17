@@ -115,11 +115,9 @@ export function TemplateCreator({
 
     try {
       const response = await api.post('/api/templates', {
-        body: JSON.stringify({
-          name: name.trim(),
-          description: description.trim(),
-          config,
-        }),
+        name: name.trim(),
+        description: description.trim(),
+        config,
       });
 
       if (response.ok) {

@@ -95,11 +95,9 @@ export function TemplateConfigEditor({
 
     try {
       const response = await api.put(`/api/templates/${templateId}`, {
-        body: JSON.stringify({
-          name,
-          description,
-          config,
-        }),
+        name,
+        description,
+        config,
       });
 
       if (response.ok) {
