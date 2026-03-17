@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Save, RotateCcw, FileCode, Layers } from 'lucide-react'
 import { useToast } from '@/components/ui/toaster'
+import { api } from '@/lib/api-client'
 import { ConfigLayout } from './ConfigLayout'
 import { ConfigPreview } from './ConfigPreview'
 import { ConfigTemplates } from './ConfigTemplates'
@@ -105,10 +106,23 @@ function ConfigPageContent({
   const handleSave = async () => {
     try {
       await saveConfig()
-      toast({
-        title: '保存成功',
-        description: '配置已保存并应用'
-      })
+
+      // Restart container to apply new config
+      const restartResponse = await api.patch(`/api/containers/${instanceId}`, { action: 'restart' })
+      if (!restartResponse.ok) {
+        toast({
+          title: '保存成功',
+          description: '配置已保存，但容器重启失败，请手动重启'
+        })
+      } else {
+        toast({
+          title: '保存成功',
+          description: '配置已保存并重启应用'
+        })
+      }
+
+      // Navigate back to home page
+      router.push('/')
     } catch (error) {
       toast({
         title: '保存失败',

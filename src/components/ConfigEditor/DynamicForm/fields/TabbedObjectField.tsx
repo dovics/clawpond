@@ -78,9 +78,13 @@ export const TabbedObjectField = memo(function TabbedObjectField({
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
+      <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10 h-auto p-1 gap-1 bg-transparent">
         {propertyKeys.map(key => (
-          <TabsTrigger key={key} value={key} className="text-xs">
+          <TabsTrigger
+            key={key}
+            value={key}
+            className="text-base font-semibold py-3 px-4 border-2 border-transparent data-[state=active]:border-red-500 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400 rounded-lg transition-all"
+          >
             {key}
           </TabsTrigger>
         ))}

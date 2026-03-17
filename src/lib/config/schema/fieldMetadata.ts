@@ -336,6 +336,49 @@ export const fieldMetadata: Record<string, FieldUIOptions> = {
     label: '启用网页抓取'
   },
 
+  // Proxy configuration
+  'proxy.enabled': {
+    widget: 'boolean',
+    label: '启用代理'
+  },
+
+  'proxy.scope': {
+    widget: 'select',
+    label: '代理范围',
+    options: {
+      'environment': '系统环境',
+      'zeroclaw': 'ZeroClaw',
+      'services': '指定服务'
+    }
+  },
+
+  'proxy.http_proxy': {
+    label: 'HTTP 代理',
+    placeholder: 'http://proxy:8080'
+  },
+
+  'proxy.https_proxy': {
+    label: 'HTTPS 代理',
+    placeholder: 'http://proxy:8080'
+  },
+
+  'proxy.all_proxy': {
+    label: '通用代理',
+    placeholder: 'socks5://proxy:1080'
+  },
+
+  'proxy.no_proxy': {
+    widget: 'array',
+    label: '不代理的地址',
+    placeholder: 'localhost,127.0.0.1'
+  },
+
+  'proxy.services': {
+    widget: 'array',
+    label: '指定服务',
+    placeholder: 'web_search,web_fetch'
+  },
+
   // Skills configuration
   'skills.open_skills_enabled': {
     widget: 'boolean',

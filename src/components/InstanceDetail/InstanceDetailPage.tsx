@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui/toaster';
 import { ZeroClawInstance } from '@/types';
 import { cn, formatDate } from '@/lib/utils';
 import { api } from '@/lib/api-client';
+import { useInstances } from '@/components/providers/InstanceProvider';
 import { SkillsManager } from './SkillsManager';
 import { FileEditor } from './FileEditor';
 
@@ -38,6 +39,7 @@ interface InstanceStatus {
 export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetailPageProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { refresh: refreshInstances } = useInstances();
   const [instanceId, setInstanceId] = useState<string | null>(null);
   const [instance, setInstance] = useState<ZeroClawInstance | null>(null);
   const [status, setStatus] = useState<InstanceStatus | null>(null);
@@ -245,9 +247,9 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
           description: 'Container configuration updated and rebuilt successfully',
           variant: 'success',
         });
-        // Refresh instance data
-        await fetchInstance();
-        setOriginalValues({ port, cpuLimit, memoryLimit, envVars });
+        // Refresh instance list and navigate back to homepage
+        await refreshInstances();
+        router.push('/');
       } else {
         const error = await response.json();
         toast({
@@ -607,10 +609,16 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
             {/* Right Column - Tabbed Content */}
             <div className="lg:col-span-3">
               <Tabs defaultValue="config" className="space-y-4">
-                <TabsList>
-                  <TabsTrigger value="config">Container Configuration</TabsTrigger>
-                  <TabsTrigger value="workspace">Workspace</TabsTrigger>
-                  <TabsTrigger value="skills">Skills</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 h-auto p-1 gap-1 bg-transparent">
+                  <TabsTrigger value="config" className="text-base font-semibold py-3 px-4 border-2 border-transparent data-[state=active]:border-red-500 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400 rounded-lg transition-all">
+                    Container Configuration
+                  </TabsTrigger>
+                  <TabsTrigger value="workspace" className="text-base font-semibold py-3 px-4 border-2 border-transparent data-[state=active]:border-red-500 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400 rounded-lg transition-all">
+                    Workspace
+                  </TabsTrigger>
+                  <TabsTrigger value="skills" className="text-base font-semibold py-3 px-4 border-2 border-transparent data-[state=active]:border-red-500 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400 rounded-lg transition-all">
+                    Skills
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="config" className="space-y-6">

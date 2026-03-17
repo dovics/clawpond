@@ -12,8 +12,14 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const stats = await instanceStateManagerService.getContainerStats(id);
-    return NextResponse.json(stats);
+    const instance = await instanceStateManagerService.getInstanceById(id);
+    if (!instance) {
+      return NextResponse.json(
+        { error: 'Container not found' },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json(instance);
   } catch (error) {
     logError(error, { endpoint: `/api/containers/[id]`, method: 'GET' });
     const errorResponse = formatErrorResponse(error);

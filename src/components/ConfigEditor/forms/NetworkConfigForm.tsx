@@ -10,7 +10,7 @@ export function NetworkConfigForm({ config, onChange, errors, disabled }: Config
   const resolvedSchema = preprocessSchema(configSchema)
 
   // Network category fields
-  const networkFields = ['web_search', 'web_fetch']
+  const networkFields = ['web_search', 'web_fetch', 'proxy']
   const networkSchema: { type: 'object'; properties: Record<string, ResolvedSchemaNode> } = {
     type: 'object',
     properties: {}

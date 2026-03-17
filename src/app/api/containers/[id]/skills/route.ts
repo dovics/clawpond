@@ -30,10 +30,11 @@ export async function GET(
     }
 
     const containerName = instance.name;
+    const containerPath = `openclaw-${containerName}`;
     const skillsPath = path.join(
       process.cwd(),
       'workspace',
-      containerName,
+      containerPath,
       'workspace',
       'skills'
     );
@@ -52,7 +53,7 @@ export async function GET(
         const files = fs.readdirSync(skillPath);
         return {
           name: dir.name,
-          path: path.join('workspace', containerName, 'workspace', 'skills', dir.name),
+          path: path.join('workspace', containerPath, 'workspace', 'skills', dir.name),
           files,
         };
       });
@@ -100,10 +101,11 @@ export async function POST(
     }
 
     const containerName = instance.name;
+    const containerPath = `openclaw-${containerName}`;
     const skillsPath = path.join(
       process.cwd(),
       'workspace',
-      containerName,
+      containerPath,
       'workspace',
       'skills',
       skillName
@@ -128,10 +130,19 @@ export async function POST(
     const zip = await JSZip.loadAsync(zipBuffer);
 
     // Extract all files
+    // Strip the top-level folder from the path if it matches skillName to avoid double nesting
     const extractPromises: Promise<void>[] = [];
     zip.forEach((relativePath, file) => {
       if (!file.dir) {
-        const filePath = path.join(skillsPath, relativePath);
+        // Remove the top-level folder from the path if it exists
+        // e.g., "xiaohongshu-mcp-skills/config.json" -> "config.json"
+        let extractedPath = relativePath;
+        const pathParts = relativePath.split('/');
+        if (pathParts[0] === skillName && pathParts.length > 1) {
+          extractedPath = pathParts.slice(1).join('/');
+        }
+
+        const filePath = path.join(skillsPath, extractedPath);
         const fileDir = path.dirname(filePath);
 
         // Ensure file directory exists
