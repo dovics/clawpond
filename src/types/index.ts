@@ -4,6 +4,7 @@ export interface ZeroClawInstance {
   containerId?: string;
   status: 'running' | 'stopped' | 'paused' | 'restarting' | 'exited' | 'created' | 'unknown';
   port?: number;
+  image?: string; // Docker image used by the container
   config: ZeroClawConfig;
   createdAt: string;
   lastActive?: string;

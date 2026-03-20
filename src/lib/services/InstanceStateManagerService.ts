@@ -157,6 +157,7 @@ export class InstanceStateManagerService {
       containerId: container.Id,
       status: this.mapContainerStatus(container.State),
       port: port,
+      image: containerInfo.Config.Image,
       config: await this.getConfigFromContainer(containerInfo),
       createdAt: containerInfo.Created,
       lastActive: containerInfo.State.StartedAt,

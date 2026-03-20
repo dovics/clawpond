@@ -52,11 +52,13 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
   const [port, setPort] = useState<number | undefined>(undefined);
   const [cpuLimit, setCpuLimit] = useState<number | undefined>(undefined);
   const [memoryLimit, setMemoryLimit] = useState<number | undefined>(undefined);
+  const [image, setImage] = useState<string | undefined>(undefined);
   const [envVars, setEnvVars] = useState<EnvVar[]>([]);
   const [originalValues, setOriginalValues] = useState<{
     port?: number;
     cpuLimit?: number;
     memoryLimit?: number;
+    image?: string;
     envVars?: EnvVar[];
   }>({});
 
@@ -84,6 +86,7 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
           setPort(data.port);
           setCpuLimit(data.cpuLimit);
           setMemoryLimit(data.memoryLimit);
+          setImage(data.image);
 
           // Fetch environment variables
           let envVars: EnvVar[] = [];
@@ -124,6 +127,7 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
             port: data.port,
             cpuLimit: data.cpuLimit,
             memoryLimit: data.memoryLimit,
+            image: data.image,
             envVars: envVars,
           });
           formInitialized.current = true;
@@ -199,6 +203,7 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
     port !== originalValues.port ||
     cpuLimit !== originalValues.cpuLimit ||
     memoryLimit !== originalValues.memoryLimit ||
+    image !== originalValues.image ||
     hasEnvChanges
   );
 
@@ -238,6 +243,7 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
         memoryLimit,
         cpuLimit,
         port,
+        image,
         envVars: envVarsArray,
       });
 
@@ -276,6 +282,7 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
     setPort(originalValues.port);
     setCpuLimit(originalValues.cpuLimit);
     setMemoryLimit(originalValues.memoryLimit);
+    setImage(originalValues.image);
     setEnvVars(originalValues.envVars || []);
     toast({
       title: 'Reset',
@@ -646,6 +653,39 @@ export default function InstanceDetailPage({ instanceIdPromise }: InstanceDetail
                           </div>
                         </div>
                       )}
+
+                      <Separator />
+
+                      {/* Image Configuration */}
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <HardDrive className="h-5 w-5" />
+                          <h3 className="font-medium">Container Image</h3>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Change the Docker image used by this container. The container will be recreated with the new image.
+                        </p>
+                        <div className="space-y-2">
+                          <Label htmlFor="image">Docker Image</Label>
+                          <Input
+                            id="image"
+                            placeholder="zeroclaw/zeroclaw:latest"
+                            value={image ?? ''}
+                            onChange={(e) => setImage(e.target.value || undefined)}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Example: zeroclaw/zeroclaw:latest, zeroclaw/zeroclaw:v1.2.3
+                          </p>
+                        </div>
+                        {image !== originalValues.image && (
+                          <div className="flex items-start gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                            <AlertTriangle className="h-4 w-4 text-yellow-500 shrink-0 mt-0.5" />
+                            <p className="text-sm text-yellow-500">
+                              Container image has been changed. Click "Save & Rebuild" to apply the new image.
+                            </p>
+                          </div>
+                        )}
+                      </div>
 
                       <Separator />
 

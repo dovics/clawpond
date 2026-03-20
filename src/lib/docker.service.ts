@@ -22,6 +22,17 @@ const WORKSPACE_ROOT = path.join(process.cwd(), 'workspace');
 const MOUNT_WORKSPACE_ROOT = process.env.MOUNT_WORKSPACE_ROOT || WORKSPACE_ROOT;
 
 /**
+ * 获取宿主机时区
+ */
+function getHostTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return 'UTC';
+  }
+}
+
+/**
  * 获取当前进程的 UID 和 GID
  * 直接获取当前运行进程的用户和组 ID
  */
@@ -140,6 +151,7 @@ export class DockerService {
           containerId: container.Id,
           status: this.mapContainerStatus(container.State),
           port: port,
+          image: containerInfo.Config.Image,
           config: await this.getConfigFromContainer(containerInfo),
           createdAt: containerInfo.Created,
           lastActive: containerInfo.State.StartedAt,
@@ -276,15 +288,25 @@ export class DockerService {
       const memoryLimitBytes = (options.memoryLimit || 500) * 1024 * 1024;
       const cpuLimitNanos = (options.cpuLimit || 0.5) * 1000000000;
 
+      // Get host timezone for timezone sync
+      const hostTimezone = getHostTimezone();
+      const timezoneBinds = [
+        '/etc/localtime:/etc/localtime:ro',
+        '/etc/timezone:/etc/timezone:ro'
+      ];
+
       // Build container config
       const containerConfig: any = {
         name: `openclaw-${options.name.toLowerCase().replace(/[^a-z0-9_.-]/g, '-')}`,
         Image: getZeroClawImage(),
         Cmd: ['daemon'],
         User: `${uid}:${gid}`,
-        Env: env,
+        Env: [...env, `TZ=${hostTimezone}`],
         HostConfig: {
-          Binds: [`${mountConfigDir}:/zeroclaw-data`],
+          Binds: [
+            `${mountConfigDir}:/zeroclaw-data`,
+            ...timezoneBinds
+          ],
           RestartPolicy: {
             Name: 'unless-stopped'
           },
@@ -848,6 +870,101 @@ export class DockerService {
       return true;
     } catch (error) {
       console.error('Error updating resource limits:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Update container image (requires container recreation)
+   */
+  async updateContainerImage(containerId: string, newImage: string): Promise<boolean> {
+    try {
+      const container = docker.getContainer(containerId);
+      const containerInfo = await container.inspect();
+
+      const currentImage = containerInfo.Config.Image;
+      if (currentImage === newImage) {
+        console.log('Container image unchanged, skipping recreation');
+        return true;
+      }
+
+      console.log(`Updating container ${containerId.substring(0, 12)} image: ${currentImage} -> ${newImage}`);
+
+      const containerName = containerInfo.Name.replace(/^\//, '');
+      const mountConfigDir = path.join(MOUNT_WORKSPACE_ROOT, containerName);
+
+      const wasRunning = containerInfo.State.Status === 'running';
+
+      // Get current environment variables
+      const currentEnv = containerInfo.Config.Env || [];
+
+      // Get current port from labels
+      const labels = containerInfo.Config.Labels || {};
+      const port = labels['openclaw.port'] ? parseInt(labels['openclaw.port']) : undefined;
+
+      // Prepare ExposedPorts and PortBindings
+      let newExposedPorts: any = undefined;
+      let newPortBindings: any = undefined;
+
+      if (port !== undefined) {
+        const portKey = `${port}/tcp`;
+        newExposedPorts = {
+          [portKey]: {}
+        };
+        newPortBindings = {
+          [portKey]: [{ HostPort: port.toString() }]
+        };
+      }
+
+      // Get current resource limits
+      const memoryLimitMB = labels['openclaw.memoryLimit'] ? parseInt(labels['openclaw.memoryLimit']) : undefined;
+      const cpuLimitCores = labels['openclaw.cpuLimit'] ? parseFloat(labels['openclaw.cpuLimit']) : undefined;
+
+      const newLimits: any = {};
+      if (memoryLimitMB !== undefined) {
+        newLimits.Memory = memoryLimitMB * 1024 * 1024;
+      }
+      if (cpuLimitCores !== undefined) {
+        newLimits.NanoCpus = cpuLimitCores * 1000000000;
+      }
+
+      // Stop and remove old container
+      if (wasRunning) {
+        await container.stop({ t: 10 });
+      }
+      await container.remove();
+
+      // Pull the new image
+      await this.pullImage(newImage);
+
+      // Create new container with updated image
+      const newContainerConfig = {
+        name: containerName,
+        Image: newImage,
+        Cmd: containerInfo.Config.Cmd,
+        User: containerInfo.Config.User,
+        Env: currentEnv,
+        ExposedPorts: newExposedPorts,
+        HostConfig: {
+          Binds: [`${mountConfigDir}:/zeroclaw-data`],
+          RestartPolicy: containerInfo.HostConfig.RestartPolicy,
+          PortBindings: newPortBindings,
+          ...newLimits,
+        },
+        Labels: labels,
+      };
+
+      const newContainer = await docker.createContainer(newContainerConfig);
+
+      // Start if it was running before
+      if (wasRunning) {
+        await newContainer.start();
+      }
+
+      console.log(`Container image updated successfully: ${newImage}`);
+      return true;
+    } catch (error) {
+      console.error('Error updating container image:', error);
       return false;
     }
   }
